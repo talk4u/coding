@@ -1,4 +1,4 @@
-# coding
+# Coding (rename me!)
 
 사람들의 코딩 지식 향상을 폭발적으로 도와주는 사이트
 
