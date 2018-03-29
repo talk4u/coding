@@ -30,7 +30,7 @@ RUN set -eux && apk add --no-cache --update \
     libcap-dev \
     python3 \
     # required by: isolate
-    git \
+    git
 
 # Install ioi/isolate
 RUN git clone https://github.com/ioi/isolate.git /tmp/isolate && \
