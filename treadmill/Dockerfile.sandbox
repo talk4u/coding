@@ -1,0 +1,60 @@
+FROM alpine:3.7
+
+MAINTAINER Seungyong Lee <wdyd2004@naver.com>
+
+# References:
+# [1] Java Dockerfile: https://github.com/anapsix/docker-alpine-java
+# [2] Python Dockerfile: https://hub.docker.com/r/frolvlad/alpine-python3/
+
+# Set Java env (from [1])
+ENV JAVA_VERSION_MAJOR=9 \
+    JAVA_VERSION_MINOR=0 \
+    JAVA_VERSION_BUILD=0 \
+    JAVA_PACKAGE=server-jre9 \
+    JAVA_JCE=standard \
+    JAVA_HOME=/opt/jdk \
+    PATH=${PATH}:/opt/jdk/bin \
+    LANG=C.UTF-8
+
+# Install required packages
+RUN set -eux && apk add --no-cache --update \
+    # installs base packages (gcc, g++, make, musl-dev, etc.)
+    build-base \
+    # required by: docker-alpine-java
+    ca-certificates \
+    # required by: docker-alpine-java
+    curl \
+    # required by: docker-alpine-java
+    bash \
+    # required by: isolate
+    libcap-dev \
+    python3 \
+    # required by: isolate
+    git \
+
+# Install ioi/isolate
+RUN git clone https://github.com/ioi/isolate.git /tmp/isolate && \
+    make -C /tmp/isolate && \
+    rm -r /tmp/isolate
+
+# Install Python 3 (from [2])
+RUN python3 -m ensurepip && \
+    rm -r /usr/lib/python*/ensurepip && \
+    pip3 install --upgrade pip setuptools && \
+    if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
+    if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \
+    rm -r /root/.cache
+
+# Install JRE 9.0
+RUN set -eux && \
+    apk upgrade --update && \
+    apk add --no-cache bash ca-certificates curl && \
+    echo "export LANG=C.UTF-8" > /etc/profile.d/locale.sh && \
+    echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf && \
+    mkdir -p /opt/jdk && \
+    curl -jksSLH "Cookie: oraclelicense=accept-securebackup-cookie" http://download.java.net/java/jdk9-alpine/archive/181/binaries/serverjre-9-ea+181_linux-x64-musl_bin.tar.gz -o /tmp/jdk.tar.gz && \
+    JAVA_PACKAGE_SHA256=$(curl -sSL http://download.java.net/java/jdk9-alpine/archive/181/binaries/serverjre-9-ea+181_linux-x64-musl_bin.sha256 | awk '{print $NF}') && \
+    echo "${JAVA_PACKAGE_SHA256}  /tmp/jdk.tar.gz" > /tmp/jdk.tar.gz.sha256 && \
+    sha256sum -c /tmp/jdk.tar.gz.sha256 && \
+    tar zxvf /tmp/jdk.tar.gz -C /opt/jdk --strip-components=1 && \
+    rm /tmp/jdk.tar.gz
