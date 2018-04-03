@@ -39,6 +39,8 @@ class BaseSettings:
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
+
+        'api'
     ]
 
     MIDDLEWARE = [
@@ -91,6 +93,7 @@ class BaseSettings:
         },
     ]
 
+    AUTH_USER_MODEL = 'api.CustomUser'
 
     # Internationalization
     # https://docs.djangoproject.com/en/2.0/topics/i18n/
