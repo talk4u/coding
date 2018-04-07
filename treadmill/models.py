@@ -2,7 +2,6 @@ import enum
 from datetime import datetime
 from typing import Optional, List
 
-from treadmill.config import TreadmillConfig
 from treadmill.schema_util import DataClass
 
 
@@ -23,26 +22,6 @@ class TestSet(DataClass):
     updated_at: datetime
 
 
-class Grader(DataClass):
-    grader_file: S3Key
-    created_at: datetime
-    updated_at: datetime
-
-
-class JudgeSpec(DataClass):
-    root_dir: S3Key
-    sets: List[TestSet]
-    grader: Optional[Grader]
-    mem_limit_bytes: int
-    time_limit_seconds: float
-    file_size_limit_kilos: Optional[int] = 0
-    updated_at: datetime
-
-
-class Problem(DataClass):
-    judge_spec: JudgeSpec
-
-
 class LanguageProfile(enum.Enum):
     cpp = 'c++'
     java = 'java'
@@ -54,9 +33,33 @@ class LanguageProfile(enum.Enum):
         return [(p.value, p.name) for p in cls]
 
 
+class Grader(DataClass):
+    grader_file: S3Key
+    lang_profile: LanguageProfile
+    created_at: datetime
+    updated_at: datetime
+
+
+class JudgeSpec(DataClass):
+    root_dir: S3Key
+    sets: List[TestSet]
+    grader: Optional[Grader]
+    mem_limit_bytes: int
+    time_limit_seconds: float
+    file_size_limit_kilos: int = 0
+    pid_limits: int = 1
+    updated_at: datetime
+
+
+class Problem(DataClass):
+    judge_spec: JudgeSpec
+
+
 class Submission(DataClass):
+    id: int
     user_id: int
     problem: Problem
+    src_file: S3Key
     lang_profile: LanguageProfile
 
 
@@ -100,26 +103,14 @@ class TestSetJudgeResult(DataClass):
 
 
 class JudgeResult(DataClass):
-    request_id: int
+    request_id: str  # UUID
     submission_id: int
     set_results: List[TestSetJudgeResult]
     judged_at: datetime
 
 
 class JudgeRequest(DataClass):
-    id: int
-    submission: Submission
+    id: str  # UUID
+    submission_id: int
     is_rejudge: bool
     created_at: datetime
-
-
-class JudgeContext(object):
-    config: TreadmillConfig
-    submission: Submission
-    judge_spec: JudgeSpec
-    workspace_dir: str
-
-    def __init__(self, submission, config):
-        self.submission = submission
-        self.judge_spec = submission.problem.judge_spec
-        self.config = config
