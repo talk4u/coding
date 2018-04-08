@@ -69,6 +69,7 @@ class JudgeStatus(enum.Enum):
     compile_error = 'CTE'
     passed = 'PASS'
     failed = 'FAIL'
+    internal_error = 'ERR'
 
     @classmethod
     def choices(cls):

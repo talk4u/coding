@@ -15,31 +15,31 @@ class JudgeContext(object):
         self.judge_spec = submission.problem.judge_spec
         self.config = config
 
-    def get_s3_path(self, *args):
+    def host_s3_path(self, *args):
         return os.path.join(self.config.S3FS_ROOT,
                             self.judge_spec.root_dir,
                             *args)
 
-    def get_host_workspace_path(self, *args):
+    def host_path(self, *args):
         return os.path.join(self.config.HOST_WORKSPACE_ROOT,
                             str(self.request.id),
-                            self.host_workspace_dir, *args)
+                            *args)
 
     @property
     def host_workspace_dir(self):
-        return self.get_host_workspace_path('')
+        return self.host_path('')
 
     @property
-    def src_lang(self):
+    def submission_lang(self):
         return self.submission.lang_profile
 
     @property
-    def src_lang_profile(self):
-        return LANG_PROFILES.get(self.src_lang)
+    def submission_lang_profile(self):
+        return LANG_PROFILES.get(self.submission_lang)
 
     @property
-    def has_grader(self):
-        return self.judge_spec.grader is not None
+    def grader(self):
+        return self.judge_spec.grader
 
     @property
     def grader_lang(self):

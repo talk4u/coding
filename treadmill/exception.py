@@ -1,10 +1,10 @@
-class TException(Exception):
+class TreadmillException(Exception):
     """Base Exception class for Treadmill"""
     pass
 
 
-class TaskException(TException):
-    pass
+class TaskException(TreadmillException):
+    message: str
 
 
 class CodeCompileError(TaskException):
@@ -17,7 +17,12 @@ class IsolateInitFailError(TaskException):
         self.message = message
 
 
-class TaskPreconditionException(TException):
+class SandboxRuntimeError(TaskException):
+    def __init__(self, message):
+        self.message = message
+
+
+class TaskPreconditionException(TaskException):
     def __init__(self, message):
         self.message = message
 

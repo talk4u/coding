@@ -11,8 +11,8 @@ class LanguageProfileData(object):
         self._bin_naming_rule = bin_naming_rule
         self.src_bin_name = bin_naming_rule(os.path.basename(src_file_name))
 
-    def get_bin_name(self, src_name):
-        return self._bin_naming_rule(os.path.basename(src_name))
+    def get_bin_name(self, src_basename):
+        return self._bin_naming_rule(src_basename)
 
 
 LANG_PROFILES = {
