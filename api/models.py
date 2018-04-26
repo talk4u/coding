@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 
 # Create your models here.
+from django_mysql.models import JSONField
 
 
 class BaseModel(models.Model):
@@ -57,7 +58,7 @@ class ProblemType(Enum):
 
 class Problem(BaseModel):
     type = models.CharField(max_length=255, choices=ProblemType.choices())
-    description = models.URLField()
+    description = models.TextField()
     judge_spec = models.OneToOneField('JudgeSpec', on_delete=models.SET_NULL, blank=True, null=True)
     tags = models.ManyToManyField('Tag', through='ProblemTag')
     slug = models.CharField(max_length=255, unique=True)
@@ -88,7 +89,7 @@ class JudgeSpecType(Enum):
 
 class JudgeSpec(BaseModel):
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
-    config = models.URLField()
+    config = JSONField()
     grader = models.URLField()
     test_data = models.URLField()
 
@@ -150,7 +151,7 @@ class JudgeResult(BaseModel):
     time_elapsed_seconds = models.IntegerField()
     code_size = models.IntegerField()
     score = models.IntegerField()
-    detail = models.URLField()
+    detail = JSONField()
 
     class Meta:
         db_table = 'judge_result'
