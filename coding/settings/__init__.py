@@ -93,8 +93,6 @@ class BaseSettings:
         },
     ]
 
-    AUTH_USER_MODEL = 'api.CustomUser'
-
     # Internationalization
     # https://docs.djangoproject.com/en/2.0/topics/i18n/
 
