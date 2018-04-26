@@ -16,12 +16,21 @@ class BaseModel(models.Model):
 
 class Gym(BaseModel):
     problems = models.ManyToManyField('Problem', through='GymProblem')
+    users = models.ManyToManyField(User, through='GymUser')
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     slug = models.CharField(max_length=255, unique=True)
 
     class Meta:
         db_table = 'gym'
+
+
+class GymUser(BaseModel):
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'gym_user'
 
 
 class GymProblem(BaseModel):
