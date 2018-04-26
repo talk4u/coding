@@ -7,6 +7,7 @@ from django.db import models
 from django_mysql.models import JSONField
 
 
+# BaseModel for all model
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -15,6 +16,7 @@ class BaseModel(models.Model):
         abstract = True
 
 
+# Gym Model
 class Gym(BaseModel):
     problems = models.ManyToManyField('Problem', through='GymProblem')
     users = models.ManyToManyField(User, through='GymUser')
@@ -155,4 +157,3 @@ class JudgeResult(BaseModel):
 
     class Meta:
         db_table = 'judge_result'
-
