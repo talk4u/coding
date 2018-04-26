@@ -90,6 +90,9 @@ class JudgeSpecType(Enum):
 class JudgeSpec(BaseModel):
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
+    mem_limit_bytes = models.IntegerField()
+    time_limit_seconds = models.IntegerField()
+
     grader = models.URLField()
     test_data = models.URLField()
 
