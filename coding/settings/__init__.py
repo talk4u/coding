@@ -42,7 +42,8 @@ class BaseSettings:
 
         'api',
 
-        'django_mysql'
+        'django_mysql',
+        'rest_framework',
     ]
 
     MIDDLEWARE = [
@@ -76,6 +77,11 @@ class BaseSettings:
     ]
 
     WSGI_APPLICATION = 'coding.wsgi.application'
+
+    REST_FRAMEWORK = {
+        'EXCEPTION_HANDLER': 'coding.exceptions.rest_framework_custom_exception_handler',
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination'
+    }
 
     # Password validation
     # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
