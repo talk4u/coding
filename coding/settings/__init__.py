@@ -160,7 +160,14 @@ class LocalSettings(BaseSettings):
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
             'PORT': '3306',
-            'OPTIONS': {'charset': 'utf8mb4'},
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
@@ -182,7 +189,14 @@ class TestSettings(BaseSettings):
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
             'PORT': '3306',
-            'OPTIONS': {'charset': 'utf8mb4'},
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
@@ -196,7 +210,14 @@ class StagingSettings(BaseSettings):
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
             'PORT': '3306',
-            'OPTIONS': {'charset': 'utf8mb4'},
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
