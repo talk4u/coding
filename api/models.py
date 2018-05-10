@@ -14,6 +14,9 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+User.add_to_class("get_name", lambda self: '%s%s' % (self.last_name, self.first_name))
+User.add_to_class("__str__", lambda self: '%s %s' % (self.last_name, self.first_name))
+
 
 class Gym(BaseModel):
     problems = models.ManyToManyField('Problem', through='GymProblem')
