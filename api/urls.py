@@ -1,7 +1,4 @@
-from django.urls import path
-
 from rest_framework_extensions.routers import ExtendedSimpleRouter
-from rest_framework_swagger.views import get_swagger_view
 
 import api.views as views
 
@@ -25,10 +22,4 @@ problems_router.register(r'submissions',
                          base_name='problems-submission',
                          parents_query_lookups=['problem'])
 
-schema_view = get_swagger_view(title='Coding API')
-
-urlpatterns = [
-    path(r'docs/', schema_view),
-]
-
-urlpatterns += router.urls
+urlpatterns = router.urls

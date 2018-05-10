@@ -101,6 +101,9 @@ class BaseSettings:
         'JWT_RESPONSE_PAYLOAD_HANDLER': 'coding.jwt.jwt_response_payload_handler',
     }
 
+    LOGIN_URL = 'rest_framework:login'
+    LOGOUT_URL = 'rest_framework:logout'
+
     # Password validation
     # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 
