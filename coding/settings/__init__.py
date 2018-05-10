@@ -86,7 +86,19 @@ class BaseSettings:
 
     REST_FRAMEWORK = {
         'EXCEPTION_HANDLER': 'coding.exceptions.rest_framework_custom_exception_handler',
-        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination'
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+        'DEFAULT_PERMISSION_CLASSES': (
+            'rest_framework.permissions.IsAuthenticated',
+        ),
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+            'rest_framework.authentication.BasicAuthentication',
+        ),
+    }
+
+    JWT_AUTH = {
+        'JWT_RESPONSE_PAYLOAD_HANDLER': 'coding.jwt.jwt_response_payload_handler',
     }
 
     # Password validation
