@@ -44,6 +44,7 @@ class BaseSettings:
 
         'django_mysql',
         'rest_framework',
+        'rest_framework_swagger',
     ]
 
     MIDDLEWARE = [
