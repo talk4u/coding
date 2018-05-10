@@ -159,7 +159,8 @@ class LocalSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {'charset': 'utf8mb4'},
         }
     }
 
@@ -180,7 +181,8 @@ class TestSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {'charset': 'utf8mb4'},
         }
     }
 
@@ -193,7 +195,8 @@ class StagingSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {'charset': 'utf8mb4'},
         }
     }
 
