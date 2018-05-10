@@ -45,7 +45,12 @@ class BaseSettings:
         'django_mysql',
         'rest_framework',
         'rest_framework_swagger',
+        'raven.contrib.django.raven_compat',
     ]
+
+    RAVEN_CONFIG = {
+        'dsn': 'https://933cbe8327704f9ea2753e644091a355:62365dabd7f74b1e8c66588f27e7f6ec@sentry.io/1204221'
+    }
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
