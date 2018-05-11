@@ -35,16 +35,18 @@ class GymUser(BaseModel):
 
     class Meta:
         db_table = 'gym_user'
+        auto_created = True
 
 
 class GymProblem(BaseModel):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
     problem = models.ForeignKey('Problem', on_delete=models.CASCADE)
-    order = models.IntegerField()
+    order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'gym_problem'
+        auto_created = True
 
 
 class ProblemType(Enum):
@@ -76,6 +78,7 @@ class ProblemTag(BaseModel):
 
     class Meta:
         db_table = 'problem_tag'
+        auto_created = True
 
 
 class JudgeSpecType(Enum):

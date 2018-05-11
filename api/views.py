@@ -11,8 +11,14 @@ class UserViewSet(NestedViewSetMixin, ModelViewSet):
 
 
 class GymViewSet(NestedViewSetMixin, ModelViewSet):
-    queryset = models.Gym.objects.all()
     serializer_class = serializers.GymSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        gyms = models.Gym.objects.all()
+        if user.groups.filter(name='student').exists():
+            gyms = gyms.filter(users=user)
+        return gyms
 
 
 class ProblemViewSet(NestedViewSetMixin, ModelViewSet):
