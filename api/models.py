@@ -14,6 +14,9 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+User.add_to_class("get_name", lambda self: '%s%s' % (self.last_name, self.first_name))
+User.add_to_class("__str__", lambda self: '%s %s' % (self.last_name, self.first_name))
+
 
 class Gym(BaseModel):
     problems = models.ManyToManyField('Problem', through='GymProblem')
@@ -32,16 +35,18 @@ class GymUser(BaseModel):
 
     class Meta:
         db_table = 'gym_user'
+        auto_created = True
 
 
 class GymProblem(BaseModel):
     gym = models.ForeignKey(Gym, on_delete=models.CASCADE)
     problem = models.ForeignKey('Problem', on_delete=models.CASCADE)
-    order = models.IntegerField()
+    order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'gym_problem'
+        auto_created = True
 
 
 class ProblemType(Enum):
@@ -73,6 +78,7 @@ class ProblemTag(BaseModel):
 
     class Meta:
         db_table = 'problem_tag'
+        auto_created = True
 
 
 class JudgeSpecType(Enum):
