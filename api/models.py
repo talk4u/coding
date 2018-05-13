@@ -14,7 +14,7 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
-User.add_to_class("get_name", lambda self: '%s%s' % (self.last_name, self.first_name))
+User.add_to_class("name", property(lambda self: '%s%s' % (self.last_name, self.first_name)))
 User.add_to_class("__str__", lambda self: '%s %s' % (self.last_name, self.first_name))
 
 
@@ -27,6 +27,11 @@ class Gym(BaseModel):
 
     class Meta:
         db_table = 'gym'
+        verbose_name = '도장'
+        verbose_name_plural = '도장'
+
+    def __str__(self):
+        return self.name
 
 
 class GymUser(BaseModel):
@@ -35,7 +40,6 @@ class GymUser(BaseModel):
 
     class Meta:
         db_table = 'gym_user'
-        auto_created = True
 
 
 class GymProblem(BaseModel):
@@ -46,7 +50,6 @@ class GymProblem(BaseModel):
 
     class Meta:
         db_table = 'gym_problem'
-        auto_created = True
 
 
 class ProblemType(Enum):
@@ -63,6 +66,7 @@ class ProblemType(Enum):
 
 class Problem(BaseModel):
     type = models.CharField(max_length=255, choices=ProblemType.choices())
+    name = models.CharField(max_length=255)
     description = models.TextField()
     judge_spec = models.OneToOneField('JudgeSpec', on_delete=models.SET_NULL, blank=True, null=True)
     tags = models.ManyToManyField('Tag', through='ProblemTag')
@@ -70,6 +74,11 @@ class Problem(BaseModel):
 
     class Meta:
         db_table = 'problem'
+        verbose_name = '문제'
+        verbose_name_plural = '문제'
+
+    def __str__(self):
+        return self.name
 
 
 class ProblemTag(BaseModel):
@@ -78,7 +87,6 @@ class ProblemTag(BaseModel):
 
     class Meta:
         db_table = 'problem_tag'
-        auto_created = True
 
 
 class JudgeSpecType(Enum):
@@ -104,6 +112,8 @@ class JudgeSpec(BaseModel):
 
     class Meta:
         db_table = 'judge_spec'
+        verbose_name = '채점기준'
+        verbose_name_plural = '채점기준'
 
 
 class Tag(BaseModel):
@@ -112,6 +122,11 @@ class Tag(BaseModel):
 
     class Meta:
         db_table = 'tag'
+        verbose_name = '태그'
+        verbose_name_plural = '태그'
+
+    def __str__(self):
+        return self.name
 
 
 class LanguageProfile(Enum):
@@ -136,6 +151,11 @@ class Submission(BaseModel):
 
     class Meta:
         db_table = 'submission'
+        verbose_name = '제출'
+        verbose_name_plural = '제출'
+
+    def __str__(self):
+        return '%s 문제에 대한 %s 의 제출 (%s)' % (self.problem.name, self.user.name, self.lang_profile)
 
 
 class JudgeStatus(Enum):
@@ -164,4 +184,8 @@ class JudgeResult(BaseModel):
 
     class Meta:
         db_table = 'judge_result'
+        verbose_name = '채점결과'
+        verbose_name_plural = '채점결과'
 
+    def __str__(self):
+        return '%s 에 대한 채점결과 (%s)점' % (self.submission.__str__(), self.score)

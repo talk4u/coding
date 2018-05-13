@@ -17,10 +17,17 @@ class GymAdmin(admin.ModelAdmin):
     inlines = (GymProblemInline, GymUserInline)
 
 
+class ProblemTagInline(admin.TabularInline):
+    model = models.ProblemTag
+    extra = 2
+
+
+class ProblemAdmin(admin.ModelAdmin):
+    inlines = (ProblemTagInline,)
+
+
 admin.site.register(models.Gym, GymAdmin)
-admin.site.register(models.GymProblem)
-admin.site.register(models.Problem)
-admin.site.register(models.ProblemTag)
+admin.site.register(models.Problem, ProblemAdmin)
 admin.site.register(models.Tag)
 admin.site.register(models.JudgeSpec)
 admin.site.register(models.Submission)
