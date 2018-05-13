@@ -3,6 +3,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 import api.models as models
 import api.serializers as serializers
+from api.utils import is_student
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -16,7 +17,7 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         gyms = models.Gym.objects.all()
-        if user.groups.filter(name='student').exists():
+        if is_student(user):
             gyms = gyms.filter(users=user)
         return gyms
 

@@ -6,11 +6,7 @@ router = ExtendedSimpleRouter()
 
 router.register(r'users', views.UserViewSet, base_name='user')
 
-router.register(r'gyms', views.GymViewSet, base_name='gym')\
-      .register(r'problems',
-                views.ProblemViewSet,
-                base_name='gyms-problem',
-                parents_query_lookups=['gym'])
+router.register(r'gyms', views.GymViewSet, base_name='gym')
 
 problems_router = router.register(r'problems', views.ProblemViewSet, base_name='problem')
 problems_router.register(r'tags',
