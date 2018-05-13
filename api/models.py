@@ -35,7 +35,6 @@ class GymUser(BaseModel):
 
     class Meta:
         db_table = 'gym_user'
-        auto_created = True
 
 
 class GymProblem(BaseModel):
@@ -46,7 +45,6 @@ class GymProblem(BaseModel):
 
     class Meta:
         db_table = 'gym_problem'
-        auto_created = True
 
 
 class ProblemType(Enum):
@@ -63,6 +61,7 @@ class ProblemType(Enum):
 
 class Problem(BaseModel):
     type = models.CharField(max_length=255, choices=ProblemType.choices())
+    name = models.CharField(max_length=255)
     description = models.TextField()
     judge_spec = models.OneToOneField('JudgeSpec', on_delete=models.SET_NULL, blank=True, null=True)
     tags = models.ManyToManyField('Tag', through='ProblemTag')
@@ -78,7 +77,6 @@ class ProblemTag(BaseModel):
 
     class Meta:
         db_table = 'problem_tag'
-        auto_created = True
 
 
 class JudgeSpecType(Enum):
