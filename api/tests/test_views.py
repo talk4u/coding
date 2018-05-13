@@ -4,7 +4,7 @@ from django.test import TestCase
 # Create your tests here.
 from rest_framework.reverse import reverse
 
-from api.models import User, Gym, Problem, ProblemType
+from api.models import User, Gym, Problem, ProblemType, GymProblem, GymUser
 
 
 class GymListViewTest(TestCase):
@@ -21,6 +21,7 @@ class GymListViewTest(TestCase):
         student2.groups.add(group_student)
         student2.save()
 
+        # Create one instructor
         instructor = User.objects.create_user(username='instructor', password='12345')
         instructor.groups.add(group_instructor)
         instructor.save()
@@ -40,8 +41,10 @@ class GymListViewTest(TestCase):
         )
         # Create problem as a post-step
         problem_objects_for_gym1 = Problem.objects.filter(slug__in=['A', 'B', 'C'])
-        gym1.problems.set(problem_objects_for_gym1)
-        gym1.users.set([student1, student2])
+        for p in problem_objects_for_gym1:
+            GymProblem.objects.create(problem=p, gym=gym1)
+        for student in [student1, student2]:
+            GymUser.objects.create(user=student, gym=gym1)
         gym1.save()
 
         gym2 = Gym.objects.create(
@@ -51,8 +54,10 @@ class GymListViewTest(TestCase):
         )
         # Create problem as a post-step
         problem_objects_for_gym2 = Problem.objects.filter(slug__in=['C', 'D', 'E'])
-        gym2.problems.set(problem_objects_for_gym2)
-        gym2.users.set([student1])
+        for p in problem_objects_for_gym2:
+            GymProblem.objects.create(problem=p, gym=gym2)
+        for student in [student1]:
+            GymUser.objects.create(user=student, gym=gym2)
         gym2.save()
 
         gym3 = Gym.objects.create(
@@ -62,8 +67,10 @@ class GymListViewTest(TestCase):
         )
         # Create problem as a post-step
         problem_objects_for_gym3 = Problem.objects.filter(slug__in=['E'])
-        gym3.problems.set(problem_objects_for_gym3)
-        gym3.users.set([])
+        for p in problem_objects_for_gym3:
+            GymProblem.objects.create(problem=p, gym=gym3)
+        for student in []:
+            GymUser.objects.create(user=student, gym=gym3)
         gym3.save()
 
     def test_only_accessible_gyms_by_logged_in_student(self):

@@ -35,4 +35,4 @@ class UserModelTest(TestCase):
         user = User.objects.get(id=1)
         # This will also fail if the urlconf is not defined.
         user_name = '%s%s' % (user.last_name, user.first_name)
-        self.assertEquals(user.get_name(), user_name)
+        self.assertEquals(user.name, user_name)
