@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_extensions.routers import ExtendedSimpleRouter
-from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import obtain_jwt_token, verify_jwt_token
 
 import api.views as views
 
@@ -22,6 +22,7 @@ problems_router.register(r'submissions',
 
 urlpatterns = [
     path('api-token-auth/', obtain_jwt_token),
+    path('api-token-verify/', verify_jwt_token),
 ]
 
 urlpatterns += router.urls
