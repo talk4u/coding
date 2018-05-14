@@ -36,3 +36,19 @@ class UserModelTest(TestCase):
         # This will also fail if the urlconf is not defined.
         user_name = '%s%s' % (user.last_name, user.first_name)
         self.assertEquals(user.name, user_name)
+
+class GymModelTest(Testcase):
+    @classmethod
+    def setUpTestData(cls):
+        Gym.objects.create()
+
+    def setUpTestData(cls):
+        # Set up non-modified objects used by all test methods
+        User.objects.create(first_name='승용', last_name='이')
+
+    def test_first_name_label(self):
+        user = User.objects.get(id=1)
+        field_label = user._meta.get_field('first_name').verbose_name
+        self.assertEquals(field_label, '이름')
+
+    def test_last_name_label(self):

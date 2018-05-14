@@ -39,15 +39,14 @@ class GymSerializer(serializers.ModelSerializer):
     def get_problems(self, obj):
         user = self.context['request'].user
         problems = obj.problems.all().order_by('gymproblem__order')
-        problem_summary_list, zero_cnt = [], 0
+        problem_summary_list, unsolved_cnt = [], 0
         for problem in problems:
             problem_summary = ProblemSummarySerializer(problem, context=self.context).data
-            if problem_summary['max_score'] == 0:
-                zero_cnt += 1
-
+            if problem_summary['max_score'] !=100:
+                unsolved_cnt += 1
             problem_summary_list.append(problem_summary)
 
-            if zero_cnt >= 3 and is_student(user):
+            if unsolved_cnt >= 3 and is_student(user):
                 break
 
         return problem_summary_list
