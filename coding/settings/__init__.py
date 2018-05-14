@@ -28,7 +28,7 @@ class BaseSettings:
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = True
 
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['*']
 
     # Application definition
 
@@ -39,7 +39,18 @@ class BaseSettings:
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
+
+        'api',
+
+        'django_mysql',
+        'rest_framework',
+        'rest_framework_swagger',
+        'raven.contrib.django.raven_compat',
     ]
+
+    RAVEN_CONFIG = {
+        'dsn': 'https://933cbe8327704f9ea2753e644091a355:62365dabd7f74b1e8c66588f27e7f6ec@sentry.io/1204221'
+    }
 
     MIDDLEWARE = [
         'django.middleware.security.SecurityMiddleware',
@@ -49,6 +60,8 @@ class BaseSettings:
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+        'corsheaders.middleware.CorsMiddleware',
     ]
 
     CORS_ORIGIN_ALLOW_ALL = True
@@ -73,6 +86,26 @@ class BaseSettings:
 
     WSGI_APPLICATION = 'coding.wsgi.application'
 
+    REST_FRAMEWORK = {
+        'EXCEPTION_HANDLER': 'coding.exceptions.rest_framework_custom_exception_handler',
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+        'DEFAULT_PERMISSION_CLASSES': (
+            'rest_framework.permissions.IsAuthenticated',
+        ),
+        'DEFAULT_AUTHENTICATION_CLASSES': (
+            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+            'rest_framework.authentication.BasicAuthentication',
+        ),
+    }
+
+    JWT_AUTH = {
+        'JWT_RESPONSE_PAYLOAD_HANDLER': 'coding.jwt.jwt_response_payload_handler',
+    }
+
+    LOGIN_URL = 'rest_framework:login'
+    LOGOUT_URL = 'rest_framework:logout'
+
     # Password validation
     # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 
@@ -90,7 +123,6 @@ class BaseSettings:
             'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
         },
     ]
-
 
     # Internationalization
     # https://docs.djangoproject.com/en/2.0/topics/i18n/
@@ -129,7 +161,15 @@ class LocalSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
@@ -150,7 +190,15 @@ class TestSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
@@ -163,7 +211,15 @@ class StagingSettings(BaseSettings):
             'USER': 'admin',
             'PASSWORD': 'qhtlsxkd!',
             'HOST': 'db.coding.talk4u.kr',
-            'PORT': '3306'
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+            'TEST': {
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci',
+            },
         }
     }
 
