@@ -24,24 +24,24 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content, **kwargs)
 
 # Create your views here.
-class GymApiView(viewsets.Viewset):
-    serializer_class = serializers.GymSerializer
-    queryset = models.Gym.objects.all();
-
-    def create(self, request):
-        serializer = serializers.GymSerializer
-
-        if serializer.is_valid():
-            return Response(serializer.data)
-        else :
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class GymUserApiView(viewsets.ModelViewset):
-    serializer_class = serailzsers.GymUserSerializer
-    queryset = models.GymUser.objects.all()
-    authentication_classes = (TokenAuthentication,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields= ('gym',)
+# class GymApiView(viewsets.Viewset):
+#     serializer_class = serializers.GymSerializer
+#     queryset = models.Gym.objects.all();
+#
+#     def create(self, request):
+#         serializer = serializers.GymSerializer
+#
+#         if serializer.is_valid():
+#             return Response(serializer.data)
+#         else :
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+# class GymUserApiView(viewsets.ModelViewset):
+#     serializer_class = serailzsers.GymUserSerializer
+#     queryset = models.GymUser.objects.all()
+#     authentication_classes = (TokenAuthentication,)
+#     filter_backends = (filters.SearchFilter,)
+#     search_fields= ('gym',)
 
 
 
@@ -61,11 +61,23 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
             gyms = gyms.filter(users=user)
         return gyms
 
+    def create(self, request):
+        serializer = serializers.GymSerializer
+        if serializer.is_valid():
+            return Response(serializer.data)
+        else :
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ProblemViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.Problem.objects.all()
     serializer_class = serializers.ProblemSerializer
-
+    def create(self, request):
+        serializer = serializer.ProblemSerializer
+        if serializer.is_valid():
+            return Response(serailzer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class TagViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.Tag.objects.all()
@@ -85,4 +97,3 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
 class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.JudgeResult.objects.all()
     serializer_class = serailzsers.SubmissionSerializer
-    
