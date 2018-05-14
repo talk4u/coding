@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 
-from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework_swagger.views import get_swagger_view
 
 import api.urls
@@ -14,6 +13,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('ping/', lambda r: HttpResponse("pong")),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    path('api-token-auth/', obtain_jwt_token),
     path('docs/', schema_view),
 ]

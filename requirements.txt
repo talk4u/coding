@@ -10,3 +10,4 @@ django-rest-swagger==2.2.0
 raven==6.7.0
 djangorestframework-jwt==1.11.0
 coverage==4.5.1
+django-cors-headers==2.2.0
