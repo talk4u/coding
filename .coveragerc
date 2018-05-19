@@ -1,0 +1,17 @@
+[run]
+branch = True
+
+
+omit =
+    */migrations/*
+    */tests/*
+    */core/*
+    */env/*
+
+    manage.py
+
+source =
+    api
+
+[report]
+show_missing = True
