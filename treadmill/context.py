@@ -1,50 +1,101 @@
 import os
 
-import treadmill.models as models
+import docker
+
+from treadmill.models import JudgeRequest, Submission, JudgeSpec
+from treadmill.client import APIClient
 from treadmill.config import TreadmillConfig
-from treadmill.data import LANG_PROFILES
 
 
 class JudgeContext(object):
-    def __init__(self, *,
-                 request: models.JudgeRequest,
-                 submission: models.Submission,
-                 config: TreadmillConfig):
-        self.request = request
-        self.submission = submission
-        self.judge_spec = submission.problem.judge_spec
-        self.config = config
+    def __init__(self, request: JudgeRequest, config: TreadmillConfig):
+        self._request = request
+        self._config = config
 
-    def host_s3_path(self, *args):
-        return os.path.join(self.config.S3FS_ROOT,
-                            self.judge_spec.root_dir,
-                            *args)
+        # Submission variables
 
-    def host_path(self, *args):
-        return os.path.join(self.config.HOST_WORKSPACE_ROOT,
-                            str(self.request.id),
-                            *args)
+        self._submission: Submission = None
+        self._judge_spec: JudgeSpec = None
+        self._subm_lang = None
+        self._grader = None
+        self._grader_lang = None
 
-    @property
-    def host_workspace_dir(self):
-        return self.host_path('')
+        # Path variables
 
-    @property
-    def submission_lang(self):
-        return self.submission.lang_profile
+        self._host_workspace_dir = os.path.join(config.HOST_WORKSPACE_ROOT, str(request.id))
+        self._s3fs_dir = config.S3FS_ROOT
+        self._container_workspace_dir = '/workspace'
+        self._sandbox_dir = '/sandbox'
+
+        # Clients
+
+        self.docker_client: docker.DockerClient = docker.from_env()
+        self.api_client = APIClient(config)
 
     @property
-    def submission_lang_profile(self):
-        return LANG_PROFILES.get(self.submission_lang)
+    def request(self):
+        return self._request
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def submission(self):
+        return self._submission
+
+    @submission.setter
+    def submission(self, subm: Submission):
+        assert isinstance(subm, Submission)
+        self._submission = subm
+        self._subm_lang = subm.lang_profile
+        self._judge_spec = subm.problem.judge_spec
+        self._grader = self._judge_spec.grader
+        if self._grader:
+            self._grader_lang = self._grader.lang_profile
+
+    @property
+    def judge_spec(self):
+        return self._judge_spec
+
+    @property
+    def subm_lang(self):
+        return self._subm_lang
 
     @property
     def grader(self):
-        return self.judge_spec.grader
+        return self._grader
 
     @property
     def grader_lang(self):
-        return self.judge_spec.grader.lang_profile
+        return self._grader_lang
 
     @property
-    def grader_lang_profile(self):
-        return LANG_PROFILES.get(self.grader_lang)
+    def host_workspace_dir(self):
+        return self._host_workspace_dir
+
+    @property
+    def host_s3fs_dir(self):
+        return self._s3fs_dir
+
+    @property
+    def container_workspace_dir(self):
+        return self._container_workspace_dir
+
+    @property
+    def sandbox_dir(self):
+        return self._sandbox_dir
+
+    def host_path(self, path):
+        return os.path.join(self._host_workspace_dir, *path)
+
+    def s3fs_path(self, path):
+        return os.path.join(self._s3fs_dir, *path)
+
+    def container_path(self, path):
+        return os.path.join(self._container_workspace_dir, path)
+
+    def sandbox_path(self, path):
+        if path[0].startswith == 'sandbox':
+            path[0] = path[0][7:]
+        return os.path.join(self._sandbox_dir, *path)

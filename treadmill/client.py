@@ -15,3 +15,9 @@ class APIClient(object):
 
     def set_internal_error(self, request_id, **data):
         pass
+
+    def set_passed(self, request_id, testset_id, testcase_id, ):
+        pass
+
+    def set_wrong_answer(self, request_id, testset_id, testcase_id, ):
+        pass
