@@ -30,9 +30,15 @@ class ProblemAdmin(admin.ModelAdmin):
     inlines = (JudgeSpecInline, ProblemTagInline)
 
 
+class JudgeResultInline(admin.StackedInline):
+    model = models.JudgeResult
+
+
+class SubmissionAdmin(admin.ModelAdmin):
+    inlines = (JudgeResultInline, )
+
+
 admin.site.register(models.Gym, GymAdmin)
 admin.site.register(models.Problem, ProblemAdmin)
 admin.site.register(models.Tag)
-admin.site.register(models.JudgeSpec)
-admin.site.register(models.Submission)
-admin.site.register(models.JudgeResult)
+admin.site.register(models.Submission, SubmissionAdmin)
