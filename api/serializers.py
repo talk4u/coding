@@ -77,6 +77,12 @@ class TagSerializer(serializers.ModelSerializer):
 
 class ProblemSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
+    mem_limit_bytes = serializers.IntegerField(
+        source='judge_spec.mem_limit_bytes', default=0
+    )
+    time_limit_seconds = serializers.IntegerField(
+        source='judge_spec.time_limit_seconds', default=0
+    )
 
     class Meta:
         model = models.Problem
