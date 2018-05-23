@@ -75,9 +75,6 @@ class Problem(BaseModel):
     type = models.CharField(max_length=255, choices=ProblemType.choices())
     name = models.CharField(max_length=255)
     description = models.TextField()
-    judge_spec = models.OneToOneField(
-        'JudgeSpec', on_delete=models.SET_NULL, blank=True, null=True
-    )
     tags = models.ManyToManyField('Tag', through='ProblemTag')
     slug = models.CharField(max_length=255, unique=True)
 
@@ -111,6 +108,7 @@ class JudgeSpecType(Enum):
 
 
 class JudgeSpec(BaseModel):
+    problem = models.OneToOneField('Problem', on_delete=models.CASCADE, related_name='judge_spec')
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
     mem_limit_bytes = models.IntegerField()

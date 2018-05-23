@@ -22,8 +22,12 @@ class ProblemTagInline(admin.TabularInline):
     extra = 2
 
 
+class JudgeSpecInline(admin.StackedInline):
+    model = models.JudgeSpec
+
+
 class ProblemAdmin(admin.ModelAdmin):
-    inlines = (ProblemTagInline,)
+    inlines = (JudgeSpecInline, ProblemTagInline)
 
 
 admin.site.register(models.Gym, GymAdmin)
