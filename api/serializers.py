@@ -89,6 +89,20 @@ class ProblemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ProblemRankSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(
+        source='submission.user.username'
+    )
+    submission_data = serializers.CharField(
+        source='submission.submission_data'
+    )
+
+    class Meta:
+        model = models.JudgeResult
+        fields = ('user_name', 'memory_used_bytes', 'time_elapsed_seconds',
+                  'code_size', 'submission_data', 'created_at')
+
+
 class SubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Submission

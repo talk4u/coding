@@ -21,6 +21,10 @@ problems_router.register(r'submissions',
                          views.SubmissionViewSet,
                          base_name='problems-submission',
                          parents_query_lookups=['problem'])
+problems_router.register(r'ranks',
+                         views.RankViewSet,
+                         base_name='problems-rank',
+                         parents_query_lookups=['submission__problem'])
 
 urlpatterns = [
     path('api-token-auth/', obtain_jwt_token),
