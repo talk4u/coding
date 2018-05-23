@@ -77,10 +77,30 @@ class TagSerializer(serializers.ModelSerializer):
 
 class ProblemSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
+    mem_limit_bytes = serializers.IntegerField(
+        source='judge_spec.mem_limit_bytes'
+    )
+    time_limit_seconds = serializers.IntegerField(
+        source='judge_spec.time_limit_seconds'
+    )
 
     class Meta:
         model = models.Problem
         fields = '__all__'
+
+
+class ProblemRankSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(
+        source='submission.user.username'
+    )
+    submission_data = serializers.CharField(
+        source='submission.submission_data'
+    )
+
+    class Meta:
+        model = models.JudgeResult
+        fields = ('user_name', 'memory_used_bytes', 'time_elapsed_seconds',
+                  'code_size', 'submission_data', 'created_at')
 
 
 class SubmissionSerializer(serializers.ModelSerializer):

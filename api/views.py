@@ -1,3 +1,4 @@
+from rest_framework import filters
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -20,6 +21,19 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
         if is_student(user):
             gyms = gyms.filter(users=user)
         return gyms
+
+
+class RankViewSet(NestedViewSetMixin, ModelViewSet):
+    queryset = models.JudgeResult.objects.filter(
+        status=models.JudgeStatus.passed.value,
+        score=100
+    )
+    serializer_class = serializers.ProblemRankSerializer
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = (
+        'memory_used_bytes', 'time_elapsed_seconds', 'code_size', 'created_at'
+    )
+    ordering = ('created_at',)
 
 
 class ProblemViewSet(NestedViewSetMixin, ModelViewSet):
