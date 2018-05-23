@@ -23,7 +23,8 @@ class ProblemSummarySerializer(serializers.ModelSerializer):
 
     def get_max_score(self, obj):
         max_score = models.JudgeResult.objects.filter(
-            submission__problem=obj, submission__user=self.context['request'].user
+            submission__problem=obj,
+            submission__user=self.context['request'].user
         ).aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
@@ -41,7 +42,9 @@ class GymSerializer(serializers.ModelSerializer):
         problems = obj.problems.all().order_by('gymproblem__order')
         problem_summary_list, zero_cnt = [], 0
         for problem in problems:
-            problem_summary = ProblemSummarySerializer(problem, context=self.context).data
+            problem_summary = ProblemSummarySerializer(
+                problem, context=self.context
+            ).data
             if problem_summary['max_score'] == 0:
                 zero_cnt += 1
 
@@ -57,8 +60,12 @@ class GymSerializer(serializers.ModelSerializer):
             updated_at__gte=datetime.now()-timedelta(days=1),
             submission__problem__in=obj.problems.all()
         )
-        user_ids = queryset.values_list('submission__user_id', flat=True).distinct()
-        users = models.User.objects.filter(Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id))
+        user_ids = queryset.values_list(
+            'submission__user_id', flat=True
+        ).distinct()
+        users = models.User.objects.filter(
+            Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id)
+        )
         return UserSerializer(users, many=True).data
 
 

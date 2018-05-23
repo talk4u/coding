@@ -10,7 +10,9 @@ router.register(r'users', views.UserViewSet, base_name='user')
 
 router.register(r'gyms', views.GymViewSet, base_name='gym')
 
-problems_router = router.register(r'problems', views.ProblemViewSet, base_name='problem')
+problems_router = router.register(
+    r'problems', views.ProblemViewSet, base_name='problem'
+)
 problems_router.register(r'tags',
                          views.TagViewSet,
                          base_name='problems-tag',

@@ -5,12 +5,12 @@ from django.contrib import admin
 
 class GymProblemInline(admin.TabularInline):
     model = models.GymProblem
-    extra = 2 # how many rows to show
+    extra = 2  # how many rows to show
 
 
 class GymUserInline(admin.TabularInline):
     model = models.GymUser
-    extra = 2 # how many rows to show
+    extra = 2  # how many rows to show
 
 
 class GymAdmin(admin.ModelAdmin):
