@@ -108,7 +108,9 @@ class JudgeSpecType(Enum):
 
 
 class JudgeSpec(BaseModel):
-    problem = models.OneToOneField('Problem', on_delete=models.CASCADE, related_name='judge_spec')
+    problem = models.OneToOneField(
+        'Problem', on_delete=models.CASCADE, related_name='judge_spec'
+    )
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
     mem_limit_bytes = models.IntegerField()
