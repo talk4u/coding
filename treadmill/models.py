@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import Optional, List
 
-from treadmill.schema_util import DataClass
+from treadmill.utils import DataClass
 
 
 S3Key = str
@@ -17,7 +17,7 @@ class TestCase(DataClass):
 
 class TestSet(DataClass):
     id: int
-    cases: List[TestCase]
+    testcases: List[TestCase]
     created_at: datetime
     updated_at: datetime
 
@@ -55,7 +55,7 @@ class Grader(DataClass):
 
 
 class JudgeSpec(DataClass):
-    root_dir: S3Key
+    root_dir: S3Key = ''
     testsets: List[TestSet]
     grader: Optional[Grader]
     mem_limit_bytes: int
@@ -91,12 +91,12 @@ class JudgeStatus(enum.Enum):
 
 
 class TestCaseJudgeStatus(enum.Enum):
-    not_judged = 'NA'
-    runtime_error = 'RTE'
-    wrong_answer = 'WA'
-    memory_limit_exceeded = 'MLE'
-    time_limit_exceeded = 'TLE'
-    correct = 'PASS'
+    NOT_JUDGED = 'NA'
+    RUNTIME_ERROR = 'RTE'
+    WRONG_ANSWER = 'WA'
+    MEMORY_LIMIT_EXCEEDED = 'MLE'
+    TIME_LIMIT_EXCEEDED = 'TLE'
+    PASS = 'PASS'
 
     @classmethod
     def choices(cls):
@@ -114,13 +114,13 @@ class TestCaseJudgeResult(DataClass):
 
 class TestSetJudgeResult(DataClass):
     id: int
-    case_results: List[TestCaseJudgeResult]
+    testcase_results: List[TestCaseJudgeResult]
 
 
 class JudgeResult(DataClass):
     request_id: str  # UUID
     submission_id: int
-    set_results: List[TestSetJudgeResult]
+    testset_results: List[TestSetJudgeResult]
     judged_at: datetime
 
 

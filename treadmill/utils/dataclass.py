@@ -6,6 +6,12 @@ from datetime import datetime
 import marshmallow
 import marshmallow_enum
 
+
+__all__ = [
+    'DataClass'
+]
+
+
 _MARSHMALLOW_FIELDS = {
     str: marshmallow.fields.String,
     int: marshmallow.fields.Integer,
