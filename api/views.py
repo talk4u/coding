@@ -1,9 +1,10 @@
-from rest_framework import filters
+from rest_framework import filters, permissions
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 import api.models as models
 import api.serializers as serializers
+from api.permissions import IsOwnerOrSolverOrInstructor
 from api.utils import is_student
 
 
@@ -49,3 +50,5 @@ class TagViewSet(NestedViewSetMixin, ModelViewSet):
 class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
+    permission_classes = (permissions.IsAuthenticated,
+                          IsOwnerOrSolverOrInstructor,)
