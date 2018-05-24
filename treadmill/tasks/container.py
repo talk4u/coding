@@ -9,14 +9,14 @@ from .base import SimpleTask, ContextTask
 
 
 __all__ = [
-    'BuilderContainerContext',
-    'SandboxContainerContext',
+    'BuildContext',
+    'SandboxContext',
     'CompileTask',
     'ExecuteTask'
 ]
 
 
-class BuilderContainerContext(ContextTask):
+class BuildContext(ContextTask):
     def __init__(self, *, lang):
         self.lang = lang
         self.container_tag = self.context.config.builder_container_tag(lang)
@@ -46,7 +46,7 @@ class BuilderContainerContext(ContextTask):
         return self.container.exec_run(['/bin/sh', '-c', commands], **kwargs)
 
 
-class SandboxContainerContext(ContextTask):
+class SandboxContext(ContextTask):
     def __init__(self, *, lang, isolated):
         self.lang = lang
         self.container_tag = self.context.config.sandbox_container_tag(lang)
@@ -129,10 +129,10 @@ class CompileTask(SimpleTask):
     _compilers = DictDecorator()
 
     def __init__(self, *,
-                 container: BuilderContainerContext,
+                 builder: BuildContext,
                  src_file,
                  bin_file):
-        self._container = container
+        self._builder = builder
         self._src_file = src_file
         self._bin_file = bin_file
         self.exit_code = None
@@ -144,7 +144,7 @@ class CompileTask(SimpleTask):
 
     @_compilers.when(Lang.CPP)
     def _compile_cpp(self):
-        return self._container.exec(
+        return self._builder.exec(
             'g++', self._container_path(self._src_file),
             '-o', self._container_path(self._bin_file)
         )
@@ -158,10 +158,10 @@ class CompileTask(SimpleTask):
         raise NotImplementedError()
 
     def _run_impl(self):
-        if self._container.lang not in self._compilers:
-            raise UnsupportedLanguage(self._container.lang.value)
+        if self._builder.lang not in self._compilers:
+            raise UnsupportedLanguage(self._builder.lang.value)
 
-        compile_fn = self._compilers.get(self._container.lang)
+        compile_fn = self._compilers.get(self._builder.lang)
         self.exit_code, self.output = compile_fn(self)
 
 
@@ -169,11 +169,11 @@ class ExecuteTask(SimpleTask):
     _executors = DictDecorator()
 
     def __init__(self, *,
-                 container: SandboxContainerContext,
+                 sandbox: SandboxContext,
                  bin_file,
                  stdin_file):
         self._id = str(uuid.uuid4())
-        self._container = container
+        self._sandbox = sandbox
         self._bin_file = bin_file
         self._stdin_file = stdin_file
         self._stdout_file = ['sandbox', 'logs', f'{self._id}.stdout']
@@ -196,8 +196,8 @@ class ExecuteTask(SimpleTask):
     @_executors.when(Lang.CPP)
     @_executors.when(Lang.GO)
     def _exec_native(self):
-        isolated = self._container.isolated
-        return self._container.exec(
+        isolated = self._sandbox.isolated
+        return self._sandbox.exec(
             self._sandbox_path(self._bin_file),
             limits=self.context.judge_spec if isolated else None,
             stdin_file=self._sandbox_path(self._stdin_file),
@@ -207,8 +207,8 @@ class ExecuteTask(SimpleTask):
         )
 
     def _run_impl(self):
-        if self._container.lang not in self._executors:
-            raise UnsupportedLanguage(self._container.lang.value)
+        if self._sandbox.lang not in self._executors:
+            raise UnsupportedLanguage(self._sandbox.lang.value)
 
         assert self._host_file_exists(self._stdin_file), (
             f'"{self._host_path(self._stdin_file)}" does not exists'
@@ -218,12 +218,12 @@ class ExecuteTask(SimpleTask):
         )
         self._create_host_file(self._stdout_file)
         self._create_host_file(self._stderr_file)
-        if self._container.isolated:
+        if self._sandbox.isolated:
             self._create_host_file(self._meta_file)
 
-        execute_fn = self._executors.get(self._container.lang)
+        execute_fn = self._executors.get(self._sandbox.lang)
         self.exit_code, output = execute_fn(self)
 
-        if self._container.isolated and self._host_file_exists(self._meta_file):
+        if self._sandbox.isolated and self._host_file_exists(self._meta_file):
             self.meta = IsolateExecMeta.parse(self._read_host_file(self._meta_file))
 

@@ -16,13 +16,13 @@ __all__ = [
 class JudgeAllTask(SimpleTask):
     def _run_impl(self):
         with ExitStack() as stack:
-            subm_sandbox = SandboxContainerContext(
+            subm_sandbox = SandboxContext(
                 lang=self.context.subm_lang,
                 isolated=True
             )
             stack.enter_context(subm_sandbox.run(self.context))
             if self.context.grader is not None:
-                grader_sandbox = SandboxContainerContext(
+                grader_sandbox = SandboxContext(
                     lang=self.context.grader_lang,
                     isolated=False
                 )
@@ -40,8 +40,8 @@ class JudgeAllTask(SimpleTask):
 
 class JudgeTestSetTask(SimpleTask):
     def __init__(self, subm_sandbox, grader_sandbox, testset):
-        self._subm_sandbox: SandboxContainerContext = subm_sandbox
-        self._grader_sandbox: SandboxContainerContext = grader_sandbox
+        self._subm_sandbox: SandboxContext = subm_sandbox
+        self._grader_sandbox: SandboxContext = grader_sandbox
         self.testset = testset
 
     def _run_impl(self):
@@ -50,14 +50,14 @@ class JudgeTestSetTask(SimpleTask):
             expected_file = self._host_path(self._test_output_file(self.testset, testcase))
 
             result = ExecuteTask(
-                container=self._subm_sandbox,
+                sandbox=self._subm_sandbox,
                 stdin_file=input_file,
                 bin_file=self._subm_bin_file
             ).run(self.context)
 
             if self._grader_sandbox:
                 result = ExecuteTask(
-                    container=self._grader_sandbox,
+                    sandbox=self._grader_sandbox,
                     stdin_file=result.stdout_file,
                     bin_file=self._grader_bin_file
                 ).run(self.context)
@@ -83,9 +83,9 @@ class JudgeTestSetTask(SimpleTask):
 
 class CompileAllTask(SimpleTask):
     def _run_impl(self):
-        with BuilderContainerContext(lang=self.context.subm_lang) as subm_builder:
+        with BuildContext(lang=self.context.subm_lang) as subm_builder:
             result = CompileTask(
-                container=subm_builder,
+                builder=subm_builder,
                 src_file=self._subm_src_file,
                 bin_file=self._subm_bin_file
             ).run(self.context)
@@ -96,14 +96,14 @@ class CompileAllTask(SimpleTask):
             if self.context.grader:
                 if self.context.grader_lang == self.context.subm_lang:
                     result = CompileTask(
-                        container=subm_builder,
+                        builder=subm_builder,
                         src_file=self._grader_src_file,
                         bin_file=self._grader_bin_file
                     ).run(self.context)
                 else:
-                    with BuilderContainerContext(lang=self.context.grader_lang) as grader_builder:
+                    with BuildContext(lang=self.context.grader_lang) as grader_builder:
                         result = CompileTask(
-                            container=grader_builder,
+                            builder=grader_builder,
                             src_file=self._grader_src_file,
                             bin_file=self._grader_bin_file
                         ).run(self.context)

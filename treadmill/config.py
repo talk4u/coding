@@ -14,20 +14,19 @@ class TreadmillConfig(object):
     PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.0'
 
     @classmethod
-    def builder_container_tag(cls, lang_profile):
-        if lang_profile == Lang.CPP:
+    def builder_container_tag(cls, lang):
+        if lang == Lang.CPP:
             return cls.GCC_BUILDER_TAG
-        elif lang_profile == Lang.JAVA:
+        elif lang == Lang.JAVA:
             return cls.JDK_BUILDER_TAG
-        elif lang_profile == Lang.GO:
+        elif lang == Lang.GO:
             return cls.GO_BUILDER_TAG
 
     @classmethod
-    def sandbox_container_tag(cls, lang_profile):
-        if (lang_profile == Lang.CPP or
-                lang_profile == Lang.GO):
+    def sandbox_container_tag(cls, lang):
+        if lang == Lang.CPP or lang == Lang.GO:
             return cls.NATIVE_SANDBOX_TAG
-        elif lang_profile == Lang:
+        elif lang == Lang:
             return cls.JRE_SANDBOX_TAG
-        elif lang_profile == Lang.PYTHON3:
+        elif lang == Lang.PYTHON3:
             return cls.PY3_SANDBOX_TAG
