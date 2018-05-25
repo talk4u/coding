@@ -1,6 +1,7 @@
 certifi==2018.4.16
 chardet==3.0.4
 Django==2.0.5
+django-classy-settings==2.1.1
 django-mysql==2.2.2
 docker==3.3.0
 docker-pycreds==0.2.3
