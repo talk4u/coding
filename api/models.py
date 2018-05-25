@@ -14,8 +14,15 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
-User.add_to_class("name", property(lambda self: '%s%s' % (self.last_name, self.first_name)))
-User.add_to_class("__str__", lambda self: '%s %s' % (self.last_name, self.first_name))
+
+User.add_to_class(
+    "name",
+    property(lambda self: '%s%s' % (self.last_name, self.first_name))
+)
+User.add_to_class(
+    "__str__",
+    lambda self: '%s %s' % (self.last_name, self.first_name)
+)
 
 
 class Gym(BaseModel):
@@ -68,7 +75,6 @@ class Problem(BaseModel):
     type = models.CharField(max_length=255, choices=ProblemType.choices())
     name = models.CharField(max_length=255)
     description = models.TextField()
-    judge_spec = models.OneToOneField('JudgeSpec', on_delete=models.SET_NULL, blank=True, null=True)
     tags = models.ManyToManyField('Tag', through='ProblemTag')
     slug = models.CharField(max_length=255, unique=True)
 
@@ -102,6 +108,9 @@ class JudgeSpecType(Enum):
 
 
 class JudgeSpec(BaseModel):
+    problem = models.OneToOneField(
+        'Problem', on_delete=models.CASCADE, related_name='judge_spec'
+    )
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
     mem_limit_bytes = models.IntegerField()
@@ -145,7 +154,9 @@ class LanguageProfile(Enum):
 class Submission(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
-    lang_profile = models.CharField(max_length=20, choices=LanguageProfile.choices())
+    lang_profile = models.CharField(
+        max_length=20, choices=LanguageProfile.choices()
+    )
 
     submission_data = models.URLField()
 
@@ -155,7 +166,9 @@ class Submission(BaseModel):
         verbose_name_plural = '제출'
 
     def __str__(self):
-        return '%s 문제에 대한 %s 의 제출 (%s)' % (self.problem.name, self.user.name, self.lang_profile)
+        return '%s 문제에 대한 %s 의 제출 (%s)' % (
+            self.problem.name, self.user.name, self.lang_profile
+        )
 
 
 class JudgeStatus(Enum):

@@ -10,7 +10,9 @@ router.register(r'users', views.UserViewSet, base_name='user')
 
 router.register(r'gyms', views.GymViewSet, base_name='gym')
 
-problems_router = router.register(r'problems', views.ProblemViewSet, base_name='problem')
+problems_router = router.register(
+    r'problems', views.ProblemViewSet, base_name='problem'
+)
 problems_router.register(r'tags',
                          views.TagViewSet,
                          base_name='problems-tag',
@@ -19,6 +21,10 @@ problems_router.register(r'submissions',
                          views.SubmissionViewSet,
                          base_name='problems-submission',
                          parents_query_lookups=['problem'])
+problems_router.register(r'ranks',
+                         views.RankViewSet,
+                         base_name='problems-rank',
+                         parents_query_lookups=['submission__problem'])
 
 urlpatterns = [
     path('api-token-auth/', obtain_jwt_token),
