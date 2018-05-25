@@ -1,9 +1,13 @@
-certifi==2018.1.18
+certifi==2018.4.16
 chardet==3.0.4
-docker==3.1.4
-docker-pycreds==0.2.2
+Django==2.0.5
+django-mysql==2.2.2
+docker==3.3.0
+docker-pycreds==0.2.3
 idna==2.6
 marshmallow==2.15.0
+marshmallow-enum==1.4.1
+pytz==2018.4
 requests==2.18.4
 six==1.11.0
 urllib3==1.22
