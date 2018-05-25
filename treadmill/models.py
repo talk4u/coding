@@ -51,7 +51,7 @@ class Lang(enum.Enum):
 
 class Grader(DataClass):
     grader_file: S3Key
-    lang_profile: Lang
+    lang: Lang
     created_at: datetime
     updated_at: datetime
 
@@ -76,7 +76,7 @@ class Submission(DataClass):
     user_id: int
     problem: Problem
     src_file: S3Key
-    lang_profile: Lang
+    lang: Lang
 
 
 class JudgeStatus(enum.Enum):

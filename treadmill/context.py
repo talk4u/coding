@@ -48,11 +48,11 @@ class JudgeContext(object):
     def submission(self, subm: Submission):
         assert isinstance(subm, Submission)
         self._submission = subm
-        self._subm_lang = subm.lang_profile
+        self._subm_lang = subm.lang
         self._judge_spec = subm.problem.judge_spec
         self._grader = self._judge_spec.grader
         if self._grader:
-            self._grader_lang = self._grader.lang_profile
+            self._grader_lang = self._grader.lang
 
     @property
     def judge_spec(self):
