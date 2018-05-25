@@ -71,6 +71,7 @@ class DataClassMeta(type):
         for field_name in annots.keys():
             if field_name in ns:
                 field_defaults[field_name] = ns[field_name]
+                del ns[field_name]
         ns['_fields'] = fields
         ns['_field_defaults'] = field_defaults
         datacls = super().__new__(mcs, typename, bases, ns)
@@ -106,6 +107,8 @@ class DataClass(object, metaclass=DataClassMeta):
                 field_val = kwargs[field_name]
                 setattr(self, field_name,
                         self._compose(field_type, field_val))
+            elif field_name in self._field_defaults:
+                setattr(self, field_name, self._field_defaults[field_name])
 
     def _compose(self, field_type, data):
         if _is_primitive(field_type):
@@ -147,7 +150,8 @@ class DataClass(object, metaclass=DataClassMeta):
             field = _get_marshmallow_field(field_type)
             return field(
                 required=not optional,
-                missing=default
+                missing=default,
+                default=default
             )
         elif hasattr(field_type, '__origin__'):
             return cls._marsh_container_field(field_type)
