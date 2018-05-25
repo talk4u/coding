@@ -22,25 +22,27 @@ class TestSet(DataClass):
     updated_at: datetime
 
 
+class LangProfile(enum.Enum):
+    CPP = ('g++ 6.4.0', 'main.cpp', 'main')
+    JAVA = ('OpenJDK 8u151', 'Main.java', 'Main.class')
+    PYTHON3 = ('Python 3.6.5', 'main.py', 'main.py')
+    GO = ('Go 1.10.1', 'main.go', 'main')
+
+    def __init__(self, version, src_file_name, bin_file_name):
+        self.version = version
+        self.src_file_name = src_file_name
+        self.bin_file_name = bin_file_name
+
+
 class Lang(enum.Enum):
     CPP = 'c++'
     JAVA = 'java'
     PYTHON3 = 'python3'
     GO = 'go'
 
-    def __init__(self, value):
-        if value == 'c++':
-            self.src_file_name = 'main.cpp'
-            self.bin_file_name = 'main'
-        elif value == 'java':
-            self.src_file_name = 'Main.java'
-            self.bin_file_name = 'Main.class'
-        elif value == 'python3':
-            self.src_file_name = 'main.py'
-            self.bin_file_name = 'main.py'
-        elif value == 'go':
-            self.src_file_name = 'main.go'
-            self.bin_file_name = 'main'
+    @property
+    def profile(self) -> LangProfile:
+        return getattr(LangProfile, self.name)
 
     @classmethod
     def choices(cls):

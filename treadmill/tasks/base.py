@@ -3,7 +3,7 @@ import os
 from abc import abstractmethod
 
 from treadmill.context import JudgeContext
-from treadmill.models import TestSet, TestCase, Lang
+from treadmill.models import TestSet, TestCase
 
 
 class PathMixin(object):
@@ -11,19 +11,19 @@ class PathMixin(object):
 
     @property
     def _subm_src_file(self):
-        return ['sandbox', self.context.subm_lang.src_file_name]
+        return ['sandbox', self.context.subm_lang.profile.src_file_name]
 
     @property
     def _subm_bin_file(self):
-        return ['sandbox', self.context.subm_lang.bin_file_name]
+        return ['sandbox', self.context.subm_lang.profile.bin_file_name]
 
     @property
     def _grader_src_file(self):
-        return ['sandbox', self.context.subm_lang.bin_file_name]
+        return ['sandbox', self.context.subm_lang.profile.bin_file_name]
 
     @property
     def _grader_bin_file(self):
-        return ['sandbox', self.context.grader_lang.bin_file_name]
+        return ['sandbox', self.context.grader_lang.profile.bin_file_name]
 
     @staticmethod
     def _test_input_file(testset: TestSet, testcase: TestCase):
