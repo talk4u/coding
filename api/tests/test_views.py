@@ -231,26 +231,28 @@ class GymListViewTest(TestCase):
         #  Student2 made 1 submission to problem 1
         self.assertEqual(len(resp.json()), 1)
 
-    def test_only_accessible_submissions_by_logged_in_student(self):
-        resp = self.client.get(reverse('problems-submission-list', kwargs={'parent_lookup_problem' : 1}))
+    def test_only_accessible_submission_details_by_logged_in_student(self):
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='student1', password='12345')
-        resp = self.client.get(reverse('problems-submission-list', kwargs={'parent_lookup_problem':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
-
-        # Student 1 made 2 submissions to problem 1
-        self.assertEqual(len(resp.json()), 2)
+        self.assertEqual(len(resp.json()), 1)
 
         login = self.client.login(username='student2', password='12345')
-        resp = self.client.get(reverse('problems-submission-list', kwargs={'parent_lookup_problem' : 1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':2}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
-
-        #  Student2 made 1 submission to problem 1
         self.assertEqual(len(resp.json()), 1)
+
+        # Try to see other's submission
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+
+        # Check that we got a response "Unauthorized"
+        self.assertEqual(resp.status_code, 401)
