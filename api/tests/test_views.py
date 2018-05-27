@@ -123,8 +123,45 @@ class GymListViewTest(TestCase):
             status = 'PASS',
             memory_used_bytes = 200,
             time_elapsed_seconds = 2,
-
+            code_size = 100
         )
+        judge_result1.save()
+
+        judge_result2 = JudgeResult.objects.create(
+            submission = submission3,
+            status = 'PASS',
+            memory_used_bytes = 220,
+            time_elapsed_seconds = 1,
+            code_size = 150
+        )
+        judge_result2.save()
+
+        judge_result3 = JudgeResult.objects.create(
+            submission = submission5,
+            status = 'CTE',
+            memory_used_bytes = 120,
+            time_elapsed_seconds = 3,
+            code_size = 150
+        )
+        judge_result3.save()
+
+        judge_result4 = JudgeResult.objects.create(
+            submission = submission2,
+            status = 'CTE',
+            memory_used_bytes = 120,
+            time_elapsed_seconds = 3,
+            code_size = 150
+        )
+        judge_result4.save()
+
+        judge_result5 = JudgeResult.objects.create(
+            submission = submission4,
+            status = 'PASS',
+            memory_used_bytes = 110,
+            time_elapsed_seconds = 2,
+            code_size = 250
+        )
+        judge_result5.save()
 
 
     def test_only_accessible_gyms_by_logged_in_student(self):
@@ -266,3 +303,37 @@ class GymListViewTest(TestCase):
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
+
+    def test_rank_by_logged_in_student(self):
+        resp = self.client.get(reverse('problems-rank-list', kwargs={'parent_lookup_problem' : 1}))
+
+        # Check that we got a response "Unauthorized"
+        self.assertEqual(resp.status_code, 401)
+
+        login = self.client.login(username='student1', password='12345')
+        resp = self.client.get(reverse('problems-rank-list', kwargs={'parent_lookup_problem' : 1}))
+
+        # Check that we got a response "success"
+        self.assertEqual(resp.status_code, 200)
+        # One from student1 and one from student2
+        self.assertEqual(len(resp.json()), 2)
+
+        # Try to see unsolved problems's rank
+        resp = self.client.get(reverse('problems-rank-list', kwargs={'parent_lookup_problem' : 2}))
+
+        # Check that we got a response "Unauthorized"
+        self.assertEqual(resp.status_code, 401)
+
+        login = self.client.login(username='student2', password='12345')
+        resp = self.client.get(reverse('problems-rank-list', kwargs={'parent_lookup_problem' : 1}))
+
+        # Check that we got a response "success"
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()), 2)
+
+        # Try to see unsolved problems's rank
+        resp = self.client.get(reverse('problems-rank-list', kwargs={'parent_lookup_problem' : 2}))
+
+        # Check that we got a response "Unauthorized"
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()), 1)
