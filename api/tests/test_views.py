@@ -117,6 +117,16 @@ class GymListViewTest(TestCase):
         )
         submission5.save()
 
+        # Create JudgeResult to view ranks
+        judge_result1 = JudgeResult.objects.create(
+            submission = submission1,
+            status = 'PASS',
+            memory_used_bytes = 200,
+            time_elapsed_seconds = 2,
+
+        )
+
+
     def test_only_accessible_gyms_by_logged_in_student(self):
         resp = self.client.get(reverse('gym-list'))
 
