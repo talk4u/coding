@@ -208,9 +208,13 @@ class TreadmillJudgeTask(SimpleTask):
                     self.set_judge_result(status=JudgeStatus.FAIL, score=result.total_score)
         except SubmissionCompileError:
             self.set_judge_result(status=JudgeStatus.COMPILE_ERROR)
-        except ServerFault:
+        except ServerFault as e:
             self.set_judge_result(status=JudgeStatus.INTERNAL_ERROR)
             self.context.log_current_error()
+            if e.retryable:
+                raise
+        except TreadmillSignal as e:
+            if e.retryable:
+                raise
         except Exception:
             self.context.log_current_error()
-

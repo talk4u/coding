@@ -1,5 +1,6 @@
 class TreadmillSignal(Exception):
     message = None
+    retryable = False
 
     def __init__(self, message=None):
         if message:
@@ -7,10 +8,11 @@ class TreadmillSignal(Exception):
 
 
 # =========================================================
-# Unrecoverable errors
+# Temporary errors (retry works)
 # =========================================================
 
 class InternalApiError(TreadmillSignal):
+    retryable = True
     """ Main API server is down or some error has occurred """
     pass
 
@@ -21,11 +23,6 @@ class InternalApiError(TreadmillSignal):
 
 class ServerFault(TreadmillSignal):
     message = 'Internal error has occurred'
-
-
-class JudgeRequestNotFound(ServerFault):
-    def __init__(self, request_id):
-        self.message = f'JudgeRequest #{request_id} not found'
 
 
 class IsolateInitFail(ServerFault):
