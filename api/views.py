@@ -26,7 +26,7 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
 
 class RankViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.JudgeResult.objects.filter(
-        status=models.JudgeStatus.passed.value,
+        status=models.JudgeStatus.PASSED.value,
         score=100
     )
     serializer_class = serializers.ProblemRankSerializer

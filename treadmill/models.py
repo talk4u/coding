@@ -84,8 +84,8 @@ class JudgeStatus(enum.Enum):
     ENQUEUED = 'ENQ'
     IN_PROGRESS = 'IP'
     COMPILE_ERROR = 'CTE'
-    PASS = 'PASS'
-    FAIL = 'FAIL'
+    PASSED = 'PASS'
+    FAILED = 'FAIL'
     INTERNAL_ERROR = 'ERR'
 
     @classmethod

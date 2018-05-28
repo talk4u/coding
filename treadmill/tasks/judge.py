@@ -203,9 +203,9 @@ class TreadmillJudgeTask(SimpleTask):
                 CompileAllSourcesTask().run(self.context)
                 result = JudgeInSandboxTask().run(self.context)
                 if result.total_score >= self.context.judge_spec.total_score:
-                    self.set_judge_result(status=JudgeStatus.PASS, score=result.total_score)
+                    self.set_judge_result(status=JudgeStatus.PASSED, score=result.total_score)
                 else:
-                    self.set_judge_result(status=JudgeStatus.FAIL, score=result.total_score)
+                    self.set_judge_result(status=JudgeStatus.FAILED, score=result.total_score)
         except SubmissionCompileError:
             self.set_judge_result(status=JudgeStatus.COMPILE_ERROR)
         except ServerFault as e:
