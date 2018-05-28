@@ -161,7 +161,9 @@ class Submission(BaseModel):
         max_length=20, choices=LanguageProfile.choices()
     )
 
-    submission_data = models.FileField(upload_to=get_submission_path, storage=MediaStorage())
+    submission_data = models.FileField(
+        upload_to=get_submission_path, storage=MediaStorage()
+    )
 
     class Meta:
         db_table = 'submission'
