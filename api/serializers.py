@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 
 import api.models as models
+from api.s3 import read_file
 from api.utils import is_student
 
 
@@ -101,6 +102,12 @@ class ProblemRankSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    submission_code = SerializerMethodField()
+
     class Meta:
         model = models.Submission
         fields = '__all__'
+
+    @staticmethod
+    def get_submission_code(obj):
+        return read_file(obj.submission_data)

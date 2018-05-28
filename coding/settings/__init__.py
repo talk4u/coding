@@ -46,7 +46,22 @@ class BaseSettings:
         'rest_framework',
         'rest_framework_swagger',
         'raven.contrib.django.raven_compat',
+        'storages',
     ]
+
+    # AWS
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+    AWS_S3_CUSTOM_DOMAIN = '{}.s3.amazonaws.com'.format(AWS_STORAGE_BUCKET_NAME)
+
+    AWS_S3_HOST = 's3.ap-northeast-1.amazonaws.com'
+
+    # media files setting
+    MEDIAFILES_LOCATION = ''
+    MEDIA_URL = 'https://{}/{}/'.format(AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
+    DEFAULT_FILE_STORAGE = 'coding.custom_storages.MediaStorage'
 
     RAVEN_CONFIG = {
         'dsn': 'https://933cbe8327704f9ea2753e644091a355:62365dabd7f74b1e8c66588f27e7f6ec@sentry.io/1204221'
