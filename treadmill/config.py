@@ -1,3 +1,4 @@
+import os
 from .models import Lang
 
 
@@ -46,5 +47,5 @@ class LocalConfig(TreadmillConfig):
 
     REDIS_HOST = 'localhost'
 
-    HOST_WORKSPACE_ROOT = '~/Temp/treadmill/workspace'
-    S3FS_ROOT = '~/mnt/talk4u-data'
+    HOST_WORKSPACE_ROOT = os.environ.get('HOST_WORKSPACE_ROOT', default='~/Temp/treadmill/workspace')
+    S3FS_ROOT = os.environ.get('S3FS_ROOT', default='~/mnt/talk4u-data')
