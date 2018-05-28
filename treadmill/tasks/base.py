@@ -33,27 +33,17 @@ class PathMixin(object):
     def _test_output_file(testset: TestSet, testcase: TestCase):
         return ['answer', str(testset.id), os.path.basename(testcase.output_file)]
 
-    def _host_path(self, path):
-        return self.context.host_path(path)
-
-    def _s3fs_path(self, path):
-        return self.context.s3fs_path(path)
-
-    def _container_path(self, path):
-        return self.context.container_path(path)
-
-    def _sandbox_path(self, path):
-        return self.context.sandbox_path(path)
-
-    def _create_host_file(self, path):
+    def _create_host_file(self, path, mode=None):
         open(self.context.host_path(path), 'a').close()
+        if mode:
+            os.chmod(self.context.host_path(path), mode)
 
     def _read_host_file(self, path):
         with open(self.context.host_path(path), 'r') as f:
             return f.read()
 
     def _host_file_exists(self, path):
-        return os.path.exists(self._host_path(path))
+        return os.path.exists(self.context.host_path(path))
 
 
 class SimpleTask(PathMixin):

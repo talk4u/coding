@@ -106,7 +106,6 @@ class TestCaseJudgeStatus(enum.Enum):
 
 
 class TestCaseJudgeResult(DataClass):
-    id: int
     status: TestCaseJudgeStatus
     memory_used_bytes: Optional[int] = 0
     time_elapsed_seconds: Optional[float] = 0.0
@@ -114,16 +113,18 @@ class TestCaseJudgeResult(DataClass):
 
 
 class TestSetJudgeResult(DataClass):
-    id: int
     score: int
 
 
 class JudgeResult(DataClass):
     status: JudgeStatus
+    score: int
     judged_at: datetime
 
 
 class JudgeRequest(DataClass):
+    id: int
+    submission_id: int
     rejudge: bool
     created_at: datetime
 
@@ -158,6 +159,7 @@ class IsolateExecMeta(object):
     def __init__(self, **props):
         self._props = props
 
+    @property
     def killed(self):
         """
         Present when the program was terminated by the sandbox
@@ -166,24 +168,28 @@ class IsolateExecMeta(object):
         killed = self._props.get('killed')
         return killed is not None
 
+    @property
     def time(self):
         """Run time of the program in fractional seconds."""
         time = self._props.get('time')
         if time is not None:
             return float(time)
 
+    @property
     def time_wall(self):
         """Wall clock time of the program in fractional seconds."""
         time_wall = self._props.get('time-wall')
         if time_wall is not None:
             return float(time_wall)
 
+    @property
     def max_rss(self):
         """Maximum resident set size of the process (in bytes)."""
         max_rss = self._props.get('max-rss')
         if max_rss is not None:
-            return int(max_rss) * 1000
+            return int(max_rss) * 1024
 
+    @property
     def message(self):
         """
         Status message, not intended for machine processing.
@@ -191,12 +197,14 @@ class IsolateExecMeta(object):
         """
         return self._props.get('message')
 
+    @property
     def csw_forced(self):
         """Number of context switches forced by the kernel."""
         csw_forced = self._props.get('csw-forced')
         if csw_forced is not None:
             return int(csw_forced)
 
+    @property
     def csw_voluntary(self):
         """
         Number of context switches caused by the process giving up the CPU
@@ -206,18 +214,21 @@ class IsolateExecMeta(object):
         if csw_voluntary is not None:
             return int(csw_voluntary)
 
+    @property
     def exitcode(self):
         """The program has exited normally with this exit code."""
         exitcode = self._props.get('exitcode')
         if exitcode is not None:
             return int(exitcode)
 
+    @property
     def exitsig(self):
         """The program has exited after receiving this fatal signal."""
         exitsig = self._props.get('exitsig')
         if exitsig is not None:
             return int(exitsig)
 
+    @property
     def cg_mem(self):
         """
         When control groups are enabled, this is the total memory use by the

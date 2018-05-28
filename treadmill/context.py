@@ -3,7 +3,7 @@ import os
 import docker
 
 from treadmill.models import JudgeRequest, Submission, JudgeSpec
-from treadmill.client import APIClient
+from treadmill.clients import APIClient
 from treadmill.config import TreadmillConfig
 
 

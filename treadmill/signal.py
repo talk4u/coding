@@ -1,31 +1,42 @@
 class TreadmillSignal(Exception):
     message = None
 
+    def __init__(self, message=None):
+        if message:
+            self.message = message
+
 
 # =========================================================
 # Server fault signals
 # =========================================================
 
 class ServerFault(TreadmillSignal):
-    pass
+    message = 'Internal error has occurred'
 
 
 class JudgeRequestNotFound(ServerFault):
-    pass
+    def __init__(self, request_id):
+        self.message = f'JudgeRequest #{request_id} not found'
 
 
 class IsolateInitFail(ServerFault):
+    message = 'Failed to initialize isolate'
+
+
+class IsolateExecutionError(ServerFault):
     pass
 
 
 class GraderCompileError(ServerFault):
-    def __init__(self, error):
-        self.message = error
+    pass
 
 
 class GraderRuntimeError(ServerFault):
-    def __init__(self, error):
-        self.message = error
+    pass
+
+
+class InternalApiError(ServerFault):
+    pass
 
 
 # =========================================================
@@ -42,8 +53,7 @@ class UnsupportedLanguage(ServerFault):
 
 
 class SubmissionCompileError(UserFault):
-    def __init__(self, error):
-        self.message = error
+    pass
 
 
 class OutOfMemory(UserFault):

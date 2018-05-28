@@ -8,15 +8,7 @@ from treadmill.signal import UnsupportedLanguage, IsolateInitFail
 from .base import SimpleTask, ContextTask
 
 
-__all__ = [
-    'BuildContext',
-    'SandboxContext',
-    'CompileTask',
-    'ExecuteTask'
-]
-
-
-class BuildContext(ContextTask):
+class BuilderContext(ContextTask):
     def __init__(self, *, lang):
         self.lang = lang
         self.container_tag = self.context.config.builder_container_tag(lang)
@@ -97,7 +89,8 @@ class SandboxContext(ContextTask):
                 f'--meta={meta_file}' if meta_file else '',
                 f'--mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
-                f'--time={limits.time_limit_seconds + 1}',
+                f'--wall-time={limits.time_limit_seconds * 3}',
+                f'--extra-time={limits.time_limit_seconds + 1}',
                 f'--fsize={limits.file_size_limit_kilos}',
                 f'--processes={limits.pid_limits}',
                 f'--stdin={stdin_file}' if stdin_file else '',
@@ -129,7 +122,7 @@ class CompileTask(SimpleTask):
     _compilers = DictDecorator()
 
     def __init__(self, *,
-                 builder: BuildContext,
+                 builder: BuilderContext,
                  src_file,
                  bin_file):
         self._builder = builder
@@ -145,8 +138,8 @@ class CompileTask(SimpleTask):
     @_compilers.when(Lang.CPP)
     def _compile_cpp(self):
         return self._builder.exec(
-            'g++', self._container_path(self._src_file),
-            '-o', self._container_path(self._bin_file)
+            'g++', self.context.container_path(self._src_file),
+            '-o', self.context.container_path(self._bin_file)
         )
 
     @_compilers.when(Lang.JAVA)
@@ -182,28 +175,47 @@ class ExecuteTask(SimpleTask):
 
         self.meta: IsolateExecMeta = None
         self.exit_code = None
+        self.output = None
+
+    @property
+    def ok(self):
+        return self.exit_code == 0
+
+    @property
+    def is_fatal(self):
+        return self.exit_code >= 2
+
+    @property
+    def is_timeout(self):
+        return (self.meta.killed and
+                self.meta.time_wall > self.context.judge_spec.time_limit_seconds)
+
+    @property
+    def is_out_of_memory(self):
+        return (self.meta.exitsig == 11 and
+                self.meta.max_rss > self.context.judge_spec.mem_limit_bytes)
 
     @property
     def stdout_file(self):
         return self._stdout_file
 
     def stdout(self):
-        return self._read_host_file(self._host_path(self._stdout_file))
+        return self._read_host_file(self.context.host_path(self._stdout_file))
 
     def stderr(self):
-        return self._read_host_file(self._host_path(self._stderr_file))
+        return self._read_host_file(self.context.host_path(self._stderr_file))
 
     @_executors.when(Lang.CPP)
     @_executors.when(Lang.GO)
     def _exec_native(self):
         isolated = self._sandbox.isolated
         return self._sandbox.exec(
-            self._sandbox_path(self._bin_file),
+            self.context.sandbox_path(self._bin_file),
             limits=self.context.judge_spec if isolated else None,
-            stdin_file=self._sandbox_path(self._stdin_file),
-            stdout_file=self._sandbox_path(self._stdout_file),
-            stderr_file=self._sandbox_path(self._stderr_file),
-            meta_file=self._sandbox_path(self._meta_file)
+            stdin_file=self.context.sandbox_path(self._stdin_file),
+            stdout_file=self.context.sandbox_path(self._stdout_file),
+            stderr_file=self.context.sandbox_path(self._stderr_file),
+            meta_file=self.context.sandbox_path(self._meta_file)
         )
 
     def _run_impl(self):
@@ -211,19 +223,20 @@ class ExecuteTask(SimpleTask):
             raise UnsupportedLanguage(self._sandbox.lang.value)
 
         assert self._host_file_exists(self._stdin_file), (
-            f'"{self._host_path(self._stdin_file)}" does not exists'
+            f'"{self.context.host_path(self._stdin_file)}" does not exists'
         )
         assert self._host_file_exists(self._bin_file), (
-            f'"{self._host_path(self._bin_file)}" does not exists'
+            f'"{self.context.host_path(self._bin_file)}" does not exists'
         )
-        self._create_host_file(self._stdout_file)
-        self._create_host_file(self._stderr_file)
+        self._create_host_file(self._stdout_file, mode=666)
+        self._create_host_file(self._stderr_file, mode=666)
         if self._sandbox.isolated:
-            self._create_host_file(self._meta_file)
+            self._create_host_file(self._meta_file, mode=666)
 
         execute_fn = self._executors.get(self._sandbox.lang)
-        self.exit_code, output = execute_fn(self)
+        self.exit_code, self.output = execute_fn(self)
 
-        if self._sandbox.isolated and self._host_file_exists(self._meta_file):
+        if (self._sandbox.isolated
+                and self._host_file_exists(self._meta_file)
+                and not self.is_fatal):
             self.meta = IsolateExecMeta.parse(self._read_host_file(self._meta_file))
-

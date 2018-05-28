@@ -2,8 +2,11 @@ from .models import Lang
 
 
 class TreadmillConfig(object):
-    HOST_WORKSPACE_ROOT = '~/Temp/treadmill/workspace'
-    S3FS_ROOT = '~/mnt/talk4u-data'
+    API_ENDPOINT: str
+    API_TOKEN: str
+
+    HOST_WORKSPACE_ROOT: str
+    S3FS_ROOT: str
 
     GCC_BUILDER_TAG = 'talk4u/treadmill-builder-gcc:v0.1.0'
     GO_BUILDER_TAG = 'talk4u/treadmill-builder-go110:v0.1.0'
@@ -30,3 +33,11 @@ class TreadmillConfig(object):
             return cls.JRE_SANDBOX_TAG
         elif lang == Lang.PYTHON3:
             return cls.PY3_SANDBOX_TAG
+
+
+class LocalConfig(TreadmillConfig):
+    API_ENDPOINT = 'http://localhost:8080/api'
+    API_TOKEN = ''
+
+    HOST_WORKSPACE_ROOT = '~/Temp/treadmill/workspace'
+    S3FS_ROOT = '~/mnt/talk4u-data'
