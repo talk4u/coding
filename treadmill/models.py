@@ -9,14 +9,15 @@ S3Key = str
 
 
 class TestCase(DataClass):
-    id: int
+    id: int  # index from 0
     input_file: S3Key
     output_file: S3Key
     created_at: datetime
 
 
 class TestSet(DataClass):
-    id: int
+    id: int  # index from 0
+    score: int
     testcases: List[TestCase]
     created_at: datetime
     updated_at: datetime
@@ -50,14 +51,13 @@ class Lang(enum.Enum):
 
 
 class Grader(DataClass):
-    grader_file: S3Key
+    src_file: S3Key
     lang: Lang
     created_at: datetime
     updated_at: datetime
 
 
 class JudgeSpec(DataClass):
-    root_dir: S3Key = ''
     testsets: List[TestSet]
     grader: Optional[Grader]
     mem_limit_bytes: int
@@ -108,28 +108,23 @@ class TestCaseJudgeStatus(enum.Enum):
 class TestCaseJudgeResult(DataClass):
     id: int
     status: TestCaseJudgeStatus
-    memory_used_bytes: Optional[int]
-    time_elapsed_seconds: Optional[float]
-    error_msg: Optional[str]
-    judged_at: datetime
+    memory_used_bytes: Optional[int] = 0
+    time_elapsed_seconds: Optional[float] = 0.0
+    error_msg: Optional[str] = None
 
 
 class TestSetJudgeResult(DataClass):
     id: int
-    testcase_results: List[TestCaseJudgeResult]
+    score: int
 
 
 class JudgeResult(DataClass):
-    request_id: str  # UUID
-    submission_id: int
-    testset_results: List[TestSetJudgeResult]
+    status: JudgeStatus
     judged_at: datetime
 
 
 class JudgeRequest(DataClass):
-    id: str  # UUID
-    submission_id: int
-    is_rejudge: bool
+    rejudge: bool
     created_at: datetime
 
 

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 
 from django.contrib.auth.models import User
@@ -155,6 +156,7 @@ class Submission(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
     lang = models.CharField(max_length=20, choices=Lang.choices())
+    code_size = models.IntegerField()
 
     submission_data = models.URLField()
 
@@ -188,7 +190,7 @@ class JudgeResult(BaseModel):
     submission = models.OneToOneField(Submission, on_delete=models.CASCADE)
     status = models.CharField(max_length=255, choices=JudgeStatus.choices())
     memory_used_bytes = models.IntegerField()
-    time_elapsed_seconds = models.IntegerField()
+    time_elapsed_seconds = models.FloatField()
     code_size = models.IntegerField()
     score = models.IntegerField()
     detail = JSONField()

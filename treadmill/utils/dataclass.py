@@ -175,5 +175,13 @@ class DataClass(object, metaclass=DataClassMeta):
                                            values=cls._marsh_field(value_type))
         raise TypeError('Unsupported type ' + field_type)
 
-    def _marsh_nested_field(self, field_type):
+    @classmethod
+    def _marsh_nested_field(cls, field_type):
         return marshmallow.fields.Nested(field_type.schema())
+
+    def __repr__(self):
+        field_values = ', '.join([
+            f'{field_name}={repr(getattr(self, field_name, self._field_defaults.get(field_name)))}'
+            for field_name in self._fields.keys()
+        ])
+        return f'{type(self).__name__}({field_values})'
