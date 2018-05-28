@@ -7,6 +7,15 @@ class TreadmillSignal(Exception):
 
 
 # =========================================================
+# Unrecoverable errors
+# =========================================================
+
+class InternalApiError(TreadmillSignal):
+    """ Main API server is down or some error has occurred """
+    pass
+
+
+# =========================================================
 # Server fault signals
 # =========================================================
 
@@ -32,10 +41,6 @@ class GraderCompileError(ServerFault):
 
 
 class GraderRuntimeError(ServerFault):
-    pass
-
-
-class InternalApiError(ServerFault):
     pass
 
 

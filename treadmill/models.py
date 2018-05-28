@@ -58,6 +58,7 @@ class Grader(DataClass):
 
 
 class JudgeSpec(DataClass):
+    total_score: int
     testsets: List[TestSet]
     grader: Optional[Grader]
     mem_limit_bytes: int
@@ -119,7 +120,6 @@ class TestSetJudgeResult(DataClass):
 class JudgeResult(DataClass):
     status: JudgeStatus
     score: int
-    judged_at: datetime
 
 
 class JudgeRequest(DataClass):

@@ -27,17 +27,17 @@ class APIClient(object):
         else:
             raise InternalApiError(resp.text)
 
-    def save_testcase_judge_result(self, req_id, testset_id, testcase_id, result: TestCaseJudgeResult):
+    def set_testcase_judge_result(self, req_id, testset_id, testcase_id, result: TestCaseJudgeResult):
         resp = self._post(f'/judge/{req_id}/{testset_id}/{testcase_id}/', result)
         if not resp.ok:
             raise InternalApiError(resp.text)
 
-    def save_testset_judge_result(self, req_id, testset_id, result: TestSetJudgeResult):
+    def set_testset_judge_result(self, req_id, testset_id, result: TestSetJudgeResult):
         resp = self._post(f'/judge/{req_id}/{testset_id}/', result)
         if not resp.ok:
             raise InternalApiError(resp.text)
 
-    def save_judge_result(self, req_id, result: JudgeResult):
+    def set_judge_result(self, req_id, result: JudgeResult):
         resp = self._post(f'/judge/{req_id}/', result)
         if not resp.ok:
             raise InternalApiError(resp.text)

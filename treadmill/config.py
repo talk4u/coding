@@ -5,6 +5,11 @@ class TreadmillConfig(object):
     API_ENDPOINT: str
     API_TOKEN: str
 
+    REDIS_HOST: str
+    REDIS_PORT = 6537
+
+    SENTRY_DSN = ''
+
     HOST_WORKSPACE_ROOT: str
     S3FS_ROOT: str
 
@@ -29,7 +34,7 @@ class TreadmillConfig(object):
     def sandbox_container_tag(cls, lang):
         if lang == Lang.CPP or lang == Lang.GO:
             return cls.NATIVE_SANDBOX_TAG
-        elif lang == Lang:
+        elif lang == Lang.JAVA:
             return cls.JRE_SANDBOX_TAG
         elif lang == Lang.PYTHON3:
             return cls.PY3_SANDBOX_TAG
@@ -38,6 +43,8 @@ class TreadmillConfig(object):
 class LocalConfig(TreadmillConfig):
     API_ENDPOINT = 'http://localhost:8080/api'
     API_TOKEN = ''
+
+    REDIS_HOST = 'localhost'
 
     HOST_WORKSPACE_ROOT = '~/Temp/treadmill/workspace'
     S3FS_ROOT = '~/mnt/talk4u-data'

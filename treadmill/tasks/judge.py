@@ -21,7 +21,7 @@ class JudgeTestSetTask(SimpleTask):
                               memory_used_bytes=None,
                               time_elapsed_seconds=None,
                               error=None):
-        self.context.api_client.save_testcase_judge_result(
+        self.context.api_client.set_testcase_judge_result(
             self.context.request.id,
             self.testset.id,
             testcase_id,
@@ -37,7 +37,7 @@ class JudgeTestSetTask(SimpleTask):
         if passed:
             self.score = self.context.judge_spec.testsets[self.testset.id].score
 
-        self.context.api_client.save_testset_judge_result(
+        self.context.api_client.set_testset_judge_result(
             self.context.request.id,
             self.testset.id,
             TestSetJudgeResult(score=self.score)
@@ -83,7 +83,7 @@ class JudgeTestSetTask(SimpleTask):
                 )
             return
         self.score = self.context.judge_spec.testsets[self.testset.id].score
-        self.context.api_client.save_testset_judge_result(
+        self.context.api_client.set_testset_judge_result(
             self.context.request.id,
             self.testset.id,
             TestSetJudgeResult(score=self.score)
@@ -160,6 +160,8 @@ class CompileAllSourcesTask(SimpleTask):
 
 
 class JudgeInSandboxTask(SimpleTask):
+    total_score: int
+
     def _run_impl(self):
         with ExitStack() as stack:
             subm_sandbox = SandboxContext(
@@ -185,16 +187,30 @@ class JudgeInSandboxTask(SimpleTask):
                 ).run(self.context)
                 self.total_score += result.score
 
-            self.judged_at = datetime.utcnow()
-
 
 class TreadmillJudgeTask(SimpleTask):
-    def __init__(self, request: JudgeRequest):
-        self._request = request
+    def set_judge_result(self, *, status, score=None):
+        self.context.api_client.set_judge_result(
+            self.context.request.id,
+            JudgeResult(status=status, score=score)
+        )
 
     def _run_impl(self):
-        self.context.submission = self.context.api_client.get_submission(self._request.submission_id)
+        try:
+            self.context.submission = self.context.api_client.get_submission(self.context.request.submission_id)
+            self.set_judge_result(status=JudgeStatus.IN_PROGRESS)
+            with WorkspaceContext():
+                CompileAllSourcesTask().run(self.context)
+                result = JudgeInSandboxTask().run(self.context)
+                if result.total_score >= self.context.judge_spec.total_score:
+                    self.set_judge_result(status=JudgeStatus.PASS, score=result.total_score)
+                else:
+                    self.set_judge_result(status=JudgeStatus.FAIL, score=result.total_score)
+        except SubmissionCompileError:
+            self.set_judge_result(status=JudgeStatus.COMPILE_ERROR)
+        except ServerFault:
+            self.set_judge_result(status=JudgeStatus.INTERNAL_ERROR)
+            self.context.log_current_error()
+        except Exception:
+            self.context.log_current_error()
 
-        with WorkspaceContext():
-            CompileAllSourcesTask().run(self.context)
-            JudgeInSandboxTask().run(self.context)
