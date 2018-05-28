@@ -14,3 +14,4 @@ django-cors-headers==2.2.0
 flake8==3.5.0
 python-coveralls==2.9.1
 boto==2.48.0
+django-storages==1.6.6

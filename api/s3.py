@@ -22,3 +22,8 @@ def generate_private_url(key):
                            bucket=settings.AWS_STORAGE_BUCKET_NAME,
                            key=key,
                            force_http=True)
+
+
+def get_submission_path(instance, filename):
+    extension = filename.split(".")[-1]
+    return 'submission/{}/code.{}'.format(instance.id, extension)

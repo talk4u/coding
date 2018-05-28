@@ -102,12 +102,12 @@ class ProblemRankSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
-    submission_data = SerializerMethodField()
+    submission_code = SerializerMethodField()
 
     class Meta:
         model = models.Submission
         fields = '__all__'
 
     @staticmethod
-    def get_submission_data(obj):
+    def get_submission_code(obj):
         return read_file(obj.submission_data)

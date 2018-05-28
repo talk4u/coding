@@ -6,6 +6,9 @@ from django.db import models
 # Create your models here.
 from django_mysql.models import JSONField
 
+from api.s3 import get_submission_path
+from coding.custom_storages import MediaStorage
+
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,7 +161,7 @@ class Submission(BaseModel):
         max_length=20, choices=LanguageProfile.choices()
     )
 
-    submission_data = models.URLField()
+    submission_data = models.FileField(upload_to=get_submission_path, storage=MediaStorage())
 
     class Meta:
         db_table = 'submission'
