@@ -85,12 +85,12 @@ class GymProblemTest(TestCase):
     def setUpTestData(cls):
         GymProblem.objects.create(order =1, is_active=True)
 
-    def test_gym_prob_order:
+    def test_gym_prob_order(self):
         gymprob = GymProblem.objects.get(id=1)
         field_label = gymprob._meta.get_field('order')
         self.assertEquals(field_label, 1)
 
-    def test_gym_prob_isactive:
+    def test_gym_prob_isactive(self):
         gymprob = GymProblem.objects.get(id=1)
         field_label = gymprob._meta.get_field('is_active')
         self.assertEquals(field_label, True)
@@ -100,45 +100,45 @@ class ProblemTest(TestCase):
     def setUpTestData(cls):
         Problem.objects.create(type='problem type 1', name='problem 1', description='what up?', slug='AB' )
 
-    def test_problem_label:
+    def test_problem_label(self):
         verbose = Problem._meta.verbose_name.title()
         self.assertEquals(verbose, '문제')
 
-    def test_problem_plural_label:
+    def test_problem_plural_label(self):
         verbose = Problem._meta.verbose_name_plural.title()
         self.assertEquals(verbose, '문제')
 
-    def test_problem_type:
+    def test_problem_type(self):
         problem = Problem.objects.get(id=1)
         field_label = problem._meta.get_field('type')
         self.assertEquals(field_label, 'problem type 1')
 
-    def test_problem_type_max_length:
+    def test_problem_type_max_length(self):
         problem = Problem.objects.get(id=1)
         max_length = problem._meta.get_field('type').max_length
         self.assertEquals(max_length, 255)
 
-    def test_problem_name:
+    def test_problem_name(self):
         problem = Problem.objects.get(id=1)
         field_label = problem._meta.get_field('name')
         self.assertEquals(field_label, 'problem 1')
 
-    def test_problem_type_max_length:
+    def test_problem_type_max_length(self):
         problem = Problem.objects.get(id=1)
         max_length = problem._meta.get_field('name').max_length
         self.assertEquals(max_length, 255)
 
-    def test_problem_type:
+    def test_problem_type(self):
         problem = Problem.objects.get(id=1)
         field_label = problem._meta.get_field('description')
         self.assertEquals(field_label, 'what up?')
 
-    def test_problem_type:
+    def test_problem_type(self):
         problem = Problem.objects.get(id=1)
         field_label = problem._meta.get_field('slug')
         self.assertEquals(field_label, 'AB')
 
-    def test_problem_type_max_length:
+    def test_problem_type_max_length(self):
         problem = Problem.objects.get(id=1)
         max_length = problem._meta.get_field('slug').max_length
         self.assertEquals(max_length, 255)
@@ -148,40 +148,40 @@ class JudgeSpecTest(TestCase):
     def setUpTestData(cls):
         JudgeSpec.create(type='Batch', mem_limit_bytes= 1024, time_limit_seconds = 2, grader = "https://hello.hello.hello", test_data="https://bye.bye.bye")
 
-    def test_judge_spec_label:
+    def test_judge_spec_label(self):
         verbose = JudgeSpec._meta.verbose_name.title()
         self.assertEquals(verbose, '채점기준')
 
-    def test_judge_spec_plural_label:
+    def test_judge_spec_plural_label(self):
         verbose = JudgeSpec._meta.verbose_name_plural.title()
         self.assertEquals(verbose, '채점기준')
 
-    def test_judge_spec_type:
+    def test_judge_spec_type(self):
         judge_spec= JudgeSpec.objects.get(id=1)
         field_label = judge_spec._meta.get_field('type')
         self.assertEquals(field_label, 'Batch')
 
-    def test_judge_spec_mem_limit_bytes:
+    def test_judge_spec_mem_limit_bytes(self):
         judge_spec= JudgeSpec.objects.get(id=1)
         field_label = judge_spec._meta.get_field('mem_limit_bytes')
         self.assertEquals(field_label, 1024)
 
-    def test_judge_spec_time_limit_seconds:
+    def test_judge_spec_time_limit_seconds(self):
         judge_spec= JudgeSpec.objects.get(id=1)
         field_label = judge_spec._meta.get_field('time_limit_seconds')
         self.assertEquals(field_label, 2)
 
-    def test_judge_spec_type_max_length:
+    def test_judge_spec_type_max_length(self):
         judge_spec = JudgeSpec.objects.get(id=1)
         max_length = judge_spec._meta.get_field('type').max_length
         self.assertEquals(max_length, 255)
 
-    def test_judge_spec_grader:
+    def test_judge_spec_grader(self):
         judge_spec = JudgeSpec.objects.get(id=1)
         field_label = judge_spec._meta.get_field('grader')
         self.assertEquals(field_label, "https://hello.hello.hello")
 
-    def test_judge_spec_test_data:
+    def test_judge_spec_test_data(self):
         judge_spec = JudgeSpec.objects.get(id=1)
         field_label = judge_spec._meta.get_field('test_data')
         self.assertEquals(field_label, "https://bye.bye.bye")
@@ -191,25 +191,25 @@ class TagTest(TestCase):
     def setUpTestData(cls):
         Tag.create(name = 'Dynamic Programming', description = 'trade off')
 
-    def test_tag_label:
+    def test_tag_label(self):
         verbose = Tag._meta.verbose_name.title()
         self.assertEquals(verbose, '태그')
 
-    def test_tag_plural_label:
+    def test_tag_plural_label(self):
         verbose = Tag._meta.verbose_name_plural.title()
         self.assertEquals(verbose, '태그')
 
-    def test_tag_name:
+    def test_tag_name(self):
         tag = Tag.objects.get(id=1)
         field_label = tag._meta.get_field('name')
         self.assertEquals(field_label, 'Dynamic Programming')
 
-    def test_tag_name_max_length:
+    def test_tag_name_max_length(self):
         tag = Tag.objects.get(id=1)
         max_length = tag._meta.get_field('name').max_length
         self.assertEquals(max_length, 255)
 
-    def test_tag_description:
+    def test_tag_description(self):
         tag = Tag.objects.get(id=1)
         field_label = tag._meta.get_field('description')
         self.assertEquals(field_label, 'trade off')
@@ -219,20 +219,20 @@ class SubmissionTest(TestCase):
     def setUpTestData(cls):
         Submission.create(lang_profile='c++', submission_data="https://submission.data.url")
 
-    def test_submission_verbose:
+    def test_submission_verbose(self):
         verbose = Submission._meta.verbose_name.title()
         self.assertEquals(verbose, '제출')
 
-    def test_submission_plural_verbose:
+    def test_submission_plural_verbose(self):
         verbose = Submission._meta.verbose_name_plural.title()
         self.assertEquals(verbose, '제출')
 
-    def test_submission_lang_profile:
+    def test_submission_lang_profile(self):
         submission = submission.objects.get(id=1)
         field_label = submission._meta.get_field('lang_profile')
         self.assertEquals(field_label, 'c++')
 
-    def test_submission_data:
+    def test_submission_data(self):
         submission = submission.objects.get(id=1)
         field_label = submission._meta.get_field('submission_data')
         self.assertEquals(field_label, 'https://submission.data.url')
@@ -242,40 +242,40 @@ class JudgeResult(TestCase):
     def setUpTestData(cls):
         JudgeResult.create(status='PASS', memory_used_bytes=123, time_elapsed_seconds=1.2, code_size=255, score=100)
 
-    def test_judge_result_verbose:
+    def test_judge_result_verbose(self):
         verbose = JudgeResult._meta.verbose_name.title()
         self.assertEquals(verbose, '채점결과')
 
-    def test_judge_result_plural_verbose:
+    def test_judge_result_plural_verbose(self):
         verbose = JudgeResult._meta.verbose_name_plural.title()
         self.assertEquals(verbose, '채점결과')
 
-    def test_judget_result_status:
+    def test_judget_result_status(self):
         result = JudgeResult.objects.get(id=1)
         field_label = result._meta.get_field('status')
         self.assertEquals(field_label, 'PASS')
 
-    def test_judget_result_status_max_length:
+    def test_judget_result_status_max_length(self):
         result = JudgeResult.objects.get(id=1)
         max_length = result._meta.get_field('status').max_length
         self.assertEquals(max_length, 255)
 
-    def test_judge_result_memory_used_bytes:
+    def test_judge_result_memory_used_bytes(self):
         result = JudgeResult.objects.get(id=1)
         field_label = result._meta.get_field('memory_used_bytes')
         self.assertEquals(field_label, 123)
 
-    def test_judge_result_time_elapsed_seconds:
+    def test_judge_result_time_elapsed_seconds(self):
         result = JudgeResult.objects.get(id=1)
         field_label = result._meta.get_field('time_elapsed_seconds')
         self.assertEquals(field_label, 1.2)
 
-    def test_judge_result_code_size:
+    def test_judge_result_code_size(self):
         result = JudgeResult.objects.get(id=1)
         field_label = result._meta.get_field('code_size')
         self.assertEquals(field_label, 255)
 
-    def test_judge_result_score:
+    def test_judge_result_score(self):
         result = JudgeResult.objects.get(id=1)
         field_label = result._meta.get_field('score')
         self.assertEquals(field_label, 100)
