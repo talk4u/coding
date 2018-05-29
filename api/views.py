@@ -1,4 +1,6 @@
 from rest_framework import filters, permissions
+from rest_framework.decorators import detail_route
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -52,3 +54,10 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
     serializer_class = serializers.SubmissionSerializer
     permission_classes = (permissions.IsAuthenticated,
                           IsOwnerOrSolverOrInstructor,)
+
+    @detail_route(methods=['get'], url_path='detail')
+    def get_submission_detail(self, request, pk, parent_lookup_problem):
+        submission = models.Submission.objects.get(pk=pk)
+        return Response(
+            serializers.SubmissionForJudgeSerializer(submission).data
+        )
