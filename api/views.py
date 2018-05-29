@@ -6,8 +6,8 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 import api.models as models
 import api.serializers as serializers
-from api.permissions import IsOwnerOrSolverOrInstructor
-from api.utils import is_student
+from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
+from api.utils import is_student, is_instructor
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -61,3 +61,20 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
         return Response(
             serializers.SubmissionForJudgeSerializer(submission).data
         )
+
+
+class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,
+                          IsOwnerOrInstructor,)
+
+    def get_queryset(self):
+        user = self.request.user
+        results = models.JudgeResult.objects.all() if is_instructor(user) \
+            else models.JudgeResult.objects.filter(submission__user=user)
+        return results.order_by('-created_at')
+
+    def get_serializer_class(self):
+        if self.action is 'retrieve':
+            return serializers.JudgeResultDetailSerializer
+        else:
+            return serializers.JudgeResultSerializer
