@@ -1,0 +1,10 @@
+language: python
+python:
+  - "3.6"
+install: "pip install -r requirements.txt"
+script:
+  - flake8 api --exclude api/migrations,api/tests
+  - python manage.py test api.tests --noinput
+  - coverage run manage.py test
+after_success:
+  - coveralls

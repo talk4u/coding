@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 
 import api.models as models
+from api.s3 import read_file
 from api.utils import is_student
 
 
@@ -23,7 +24,8 @@ class ProblemSummarySerializer(serializers.ModelSerializer):
 
     def get_max_score(self, obj):
         max_score = models.JudgeResult.objects.filter(
-            submission__problem=obj, submission__user=self.context['request'].user
+            submission__problem=obj,
+            submission__user=self.context['request'].user
         ).aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
@@ -56,8 +58,12 @@ class GymSerializer(serializers.ModelSerializer):
             updated_at__gte=datetime.now()-timedelta(days=1),
             submission__problem__in=obj.problems.all()
         )
-        user_ids = queryset.values_list('submission__user_id', flat=True).distinct()
-        users = models.User.objects.filter(Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id))
+        user_ids = queryset.values_list(
+            'submission__user_id', flat=True
+        ).distinct()
+        users = models.User.objects.filter(
+            Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id)
+        )
         return UserSerializer(users, many=True).data
 
 
@@ -69,13 +75,36 @@ class TagSerializer(serializers.ModelSerializer):
 
 class ProblemSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
+    mem_limit_bytes = serializers.IntegerField(
+        source='judge_spec.mem_limit_bytes'
+    )
+    time_limit_seconds = serializers.IntegerField(
+        source='judge_spec.time_limit_seconds'
+    )
 
     class Meta:
         model = models.Problem
         fields = '__all__'
 
 
+class ProblemRankSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(
+        source='submission.user.username'
+    )
+
+    class Meta:
+        model = models.JudgeResult
+        fields = ('user_name', 'memory_used_bytes', 'time_elapsed_seconds',
+                  'code_size', 'submission_id', 'created_at')
+
+
 class SubmissionSerializer(serializers.ModelSerializer):
+    submission_code = SerializerMethodField()
+
     class Meta:
         model = models.Submission
         fields = '__all__'
+
+    @staticmethod
+    def get_submission_code(obj):
+        return read_file(obj.submission_data)
