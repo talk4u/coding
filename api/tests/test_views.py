@@ -4,7 +4,7 @@ from django.test import TestCase
 # Create your tests here.
 from rest_framework.reverse import reverse
 
-from api.models import User, Gym, Problem, ProblemType, GymProblem, GymUser
+from api.models import User, Gym, Problem, ProblemType, GymProblem, GymUser, Submission, JudgeResult
 
 
 class GymListViewTest(TestCase):
@@ -131,7 +131,8 @@ class GymListViewTest(TestCase):
             status = 'PASS',
             memory_used_bytes = 200,
             time_elapsed_seconds = 2,
-            code_size = 100
+            code_size = 100,
+            score = 100
         )
         judge_result1.save()
 
@@ -140,7 +141,8 @@ class GymListViewTest(TestCase):
             status = 'PASS',
             memory_used_bytes = 220,
             time_elapsed_seconds = 1,
-            code_size = 150
+            code_size = 150,
+            score = 100
         )
         judge_result2.save()
 
@@ -149,7 +151,8 @@ class GymListViewTest(TestCase):
             status = 'CTE',
             memory_used_bytes = 120,
             time_elapsed_seconds = 3,
-            code_size = 150
+            code_size = 150,
+            score = 0
         )
         judge_result3.save()
 
@@ -158,7 +161,8 @@ class GymListViewTest(TestCase):
             status = 'CTE',
             memory_used_bytes = 120,
             time_elapsed_seconds = 3,
-            code_size = 150
+            code_size = 150,
+            score = 0
         )
         judge_result4.save()
 
@@ -167,7 +171,8 @@ class GymListViewTest(TestCase):
             status = 'PASS',
             memory_used_bytes = 110,
             time_elapsed_seconds = 2,
-            code_size = 250
+            code_size = 250,
+            score = 100
         )
         judge_result5.save()
 
@@ -237,20 +242,20 @@ class GymListViewTest(TestCase):
 
 
     def test_only_accessible_problem_by_logged_in_student(self):
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':1}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':1}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='student1', password='12345')
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':1}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
         login = self.client.login(username='student2', password='12345')
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':1}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
@@ -263,37 +268,37 @@ class GymListViewTest(TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def test_problems_by_logged_in_instructor(self):
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':1}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':1}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='instructor', password='12345')
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':1}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':2}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':2}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':3}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':3}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':4}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':4}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problem-detail', kwargs={'id':5}))
+        resp = self.client.get(reverse('problem-detail', kwargs={'pk':5}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
@@ -325,40 +330,40 @@ class GymListViewTest(TestCase):
         self.assertEqual(len(resp.json()), 1)
 
     def test_only_accessible_submission_details_by_logged_in_student(self):
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':1}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='student1', password='12345')
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
         # student1 solved problem1 so can see other's submission
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':3}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':3}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
         # Try to see other's submission when such problem is unsolved
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'id':4}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'pk':4}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='student2', password='12345')
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':2}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':2}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
         # student1 solved problem1 so can see other's submission
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
@@ -367,37 +372,37 @@ class GymListViewTest(TestCase):
 
 
     def test_submissions_by_logged_in_instructor(self):
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':1}))
 
         # Check that we got a response "Unauthorized"
         self.assertEqual(resp.status_code, 401)
 
         login = self.client.login(username='instructor', password='12345')
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':1}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':1}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'id':2}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'pk':2}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':3}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':3}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'id':4}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 2, 'pk':4}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.json()), 1)
 
-        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'id':5}))
+        resp = self.client.get(reverse('problems-submission-detail', kwargs={'parent_lookup_problem' : 1, 'pk':5}))
 
         # Check that we got a response "success"
         self.assertEqual(resp.status_code, 200)
