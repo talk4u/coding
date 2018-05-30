@@ -178,3 +178,19 @@ class SubmissionForJudgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Submission
         fields = ('id', 'user_id', 'lang', 'src_file', 'problem')
+
+
+class JudgeResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.JudgeResult
+        fields = ('id', 'submission_id', 'status',
+                  'memory_used_bytes', 'time_elapsed_seconds', 'code_size',
+                  'score', 'created_at')
+
+
+class JudgeResultDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.JudgeResult
+        fields = ('id', 'submission_id', 'status',
+                  'memory_used_bytes', 'time_elapsed_seconds', 'code_size',
+                  'score', 'detail', 'created_at')
