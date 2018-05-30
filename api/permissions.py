@@ -33,6 +33,6 @@ class IsOwnerOrInstructor(permissions.BasePermission):
         if is_instructor(request.user):
             return True
         elif request.method == 'GET' and view.action == 'retrieve':
-            return obj.user == request.user
+            return obj.submission.user == request.user
 
         return True

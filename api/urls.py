@@ -30,6 +30,10 @@ problems_router.register(r'judge-results',
                          base_name='problems-judge-result',
                          parents_query_lookups=['submission__problem'])
 
+router.register(
+    r'judge', views.JudgeViewSet, base_name='judge'
+)
+
 urlpatterns = [
     path('api-token-auth/', obtain_jwt_token),
     path('api-token-verify/', verify_jwt_token),
