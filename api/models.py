@@ -7,6 +7,9 @@ from django.db import models
 # Create your models here.
 from django_mysql.models import JSONField
 
+from api.s3 import get_submission_path
+from coding.custom_storages import MediaStorage
+
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,7 +161,9 @@ class Submission(BaseModel):
     lang = models.CharField(max_length=20, choices=Lang.choices())
     code_size = models.IntegerField()
 
-    submission_data = models.URLField()
+    submission_data = models.FileField(
+        upload_to=get_submission_path, storage=MediaStorage()
+    )
 
     class Meta:
         db_table = 'submission'
@@ -170,6 +175,19 @@ class Submission(BaseModel):
             self.problem.name, self.user.name, self.lang
         )
 
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            temp_data = self.submission_data
+            self.submission_data = None
+            super(Submission, self).save(*args, **kwargs)
+            self.submission_data = temp_data
+            super(Submission, self).save()
+        else:
+            super(Submission, self).save(*args, **kwargs)
+
+        JudgeResult.create_initial_judge_result(self)
+        # TODO : call JudgeRequest to Treadmill
+
 
 class JudgeStatus(Enum):
     ENQUEUED = 'ENQ'
@@ -178,6 +196,21 @@ class JudgeStatus(Enum):
     PASSED = 'PASS'
     FAILED = 'FAIL'
     INTERNAL_ERROR = 'ERR'
+
+    @classmethod
+    def choices(cls):
+        return [
+            (p.value, p.name) for p in cls
+        ]
+
+
+class TestCaseJudgeStatus(Enum):
+    NOT_JUDGED = 'NA'
+    RUNTIME_ERROR = 'RTE'
+    WRONG_ANSWER = 'WA'
+    MEMORY_LIMIT_EXCEEDED = 'MLE'
+    TIME_LIMIT_EXCEEDED = 'TLE'
+    PASS = 'PASS'
 
     @classmethod
     def choices(cls):
@@ -202,3 +235,38 @@ class JudgeResult(BaseModel):
 
     def __str__(self):
         return '%s 에 대한 채점결과 (%s)점' % (self.submission.__str__(), self.score)
+
+    @staticmethod
+    def create_initial_judge_result(submission):
+        judge_spec = submission.problem.judge_spec
+        set_configuration = dict(judge_spec.config)
+
+        num_sets = int(set_configuration['num_sets'])
+        case_counts = list(map(int, set_configuration['case_counts']))
+
+        test_cases = [
+            {
+                'id': i+1,
+                'status': TestCaseJudgeStatus.NOT_JUDGED.value,
+                'error_msg': '',
+                "memory_used_bytes": 0,
+                "time_elapsed_seconds": 0
+            } for i in range(sum(case_counts))
+        ]
+
+        test_sets, s = [], 0
+        for i in range(num_sets):
+            test_sets.append({
+                'id': i+1,
+                'score': 0,
+                'testcases': test_cases[s:s+case_counts[i]]
+            })
+            s += case_counts[i]
+
+        return JudgeResult.objects.create(
+            submission=submission, status=JudgeStatus.enqueued.value,
+            detail=test_sets, score=0,
+            memory_used_bytes=0,
+            time_elapsed_seconds=0,
+            code_size=0
+        )

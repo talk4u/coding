@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 
 import api.models as models
+from api.s3 import read_file, get_files_in_directory
 from api.utils import is_student
 
 
@@ -101,6 +102,95 @@ class ProblemRankSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    submission_code = SerializerMethodField()
+
     class Meta:
         model = models.Submission
         fields = '__all__'
+
+    @staticmethod
+    def get_submission_code(obj):
+        return read_file(obj.submission_data)
+
+
+class JudgeSpecSerializer(serializers.ModelSerializer):
+    grader = serializers.SerializerMethodField()
+    testsets = serializers.SerializerMethodField()
+    file_size_limit_kilos = serializers.IntegerField(default=0)
+    pid_limits = serializers.IntegerField(default=1)
+
+    class Meta:
+        model = models.JudgeSpec
+        fields = ('grader', 'testsets', 'mem_limit_bytes',
+                  'time_limit_seconds', 'file_size_limit_kilos', 'pid_limits')
+
+    @staticmethod
+    def get_grader(obj):
+        return {
+            'src_file': obj.grader,
+            'lang': 'c++'
+        }
+
+    @staticmethod
+    def get_testsets(obj):
+        set_configuration = dict(obj.config)
+
+        num_sets = int(set_configuration['num_sets'])
+        set_scores = list(map(int, set_configuration['set_scores']))
+        case_counts = list(map(int, set_configuration['case_counts']))
+
+        test_case_files = get_files_in_directory(obj.test_data)
+        test_case_files.sort()
+
+        test_cases = [
+            {
+                'id': i+1,
+                'input_file': test_case_files[i*2],
+                'output_file': test_case_files[i*2+1]
+            } for i in range(sum(case_counts))
+        ]
+
+        test_sets, s = [], 0
+        for i in range(num_sets):
+            test_sets.append({
+                'id': i+1,
+                'score': set_scores[i],
+                'testcases': test_cases[s:s+case_counts[i]]
+            })
+            s += case_counts[i]
+
+        return test_sets
+
+
+class ProblemForJudgeSerializer(serializers.ModelSerializer):
+    judge_spec = JudgeSpecSerializer()
+
+    class Meta:
+        model = models.Problem
+        fields = ('id', 'judge_spec')
+
+
+class SubmissionForJudgeSerializer(serializers.ModelSerializer):
+    problem = ProblemForJudgeSerializer()
+    lang = serializers.CharField(source='lang_profile')
+    src_file = serializers.CharField(source='submission_data')
+
+    class Meta:
+        model = models.Submission
+        fields = ('id', 'user_id', 'lang', 'src_file', 'problem')
+
+
+class JudgeResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.JudgeResult
+        fields = ('id', 'submission_id', 'status',
+                  'memory_used_bytes', 'time_elapsed_seconds', 'code_size',
+                  'score', 'created_at')
+
+
+class JudgeResultDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.JudgeResult
+        fields = ('id', 'submission_id', 'status',
+                  'memory_used_bytes', 'time_elapsed_seconds', 'code_size',
+                  'score', 'detail', 'created_at')
