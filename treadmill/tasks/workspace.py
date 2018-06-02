@@ -1,32 +1,43 @@
-import os
-import shutil
-
-from .base import ContextTask
+from .base import Environ
+from . import ops
+from . import path
 
 
 __all__ = [
-    'WorkspaceContext'
+    'WorkspaceEnviron'
 ]
 
 
-class WorkspaceContext(ContextTask):
-    def _enter(self):
-        os.makedirs(self.context.host_workspace_dir, 644, exist_ok=False)
+class WorkspaceEnviron(Environ):
+    def _setup(self):
+        yield ops.MakeDirectoryOp(path.ROOT, mode=644)
 
-        os.symlink(self.context.s3fs_path(self.context.submission.src_file),
-                   self.context.host_path(self._subm_src_file))
+        subm_src_file = path.subm_src_file()
+        yield ops.CreateSymlinkOp(
+            src_path=subm_src_file.s3fs_path,
+            dest_path=subm_src_file.host_path
+        )
 
         for testset in self.context.judge_spec.testsets:
-            for testcase in testset.cases:
-                os.symlink(self.context.s3fs_path(testcase.input_file),
-                           self.context.host_path(self._test_input_file(testset, testcase)))
-                os.symlink(self.context.s3fs_path(testcase.output_file),
-                           self.context.host_path(self._test_output_file(testset, testcase)))
+            for testcase in testset.testcases:
+                test_input_file = path.test_input_file(testset, testcase)
+                yield ops.CreateSymlinkOp(
+                    src_path=test_input_file.s3fs_path,
+                    dest_path=test_input_file.host_path
+                )
+
+                test_output_file = path.test_output_file(testset, testcase)
+                yield ops.CreateSymlinkOp(
+                    src_path=test_output_file.s3fs_path,
+                    dest_path=test_output_file.host_path
+                )
 
         if self.context.grader:
-            os.symlink(self.context.s3fs_path(self.context.judge_spec.grader.grader_file),
-                       self.context.host_path(self._grader_src_file))
+            grader_src_file = path.grader_src_file()
+            yield ops.CreateSymlinkOp(
+                src_path=grader_src_file.s3fs_path,
+                dest_path=grader_src_file.host_path
+            )
 
-    def _exit(self):
-        if self.context.request and os.path.isdir(self.context.host_workspace_dir):
-            shutil.rmtree(self.context.host_workspace_dir)
+    def _teardown(self):
+        yield ops.RemoveDirectoryOp(path.ROOT)

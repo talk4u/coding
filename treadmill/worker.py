@@ -1,18 +1,26 @@
-import argparse
-import importlib
-
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 
 from treadmill.models import JudgeRequest
 from treadmill.context import JudgeContextFactory
 from treadmill.config import TreadmillConfig
-from treadmill.tasks import TreadmillJudgeTask
+from treadmill.tasks import JudgePipeline
+from treadmill.utils import cached
+
+
+__all__ = [
+    'WorkerFactory'
+]
 
 
 # Lower is faster
-NORMAL_PRIO = 0
-REJUDGE_PRIO = 10
+HIGH_PRIO = 0
+NORMAL_PRIO = 50
+LOW_PRIO = 100
+
+NORMAL_QUEUE = 'treadmill.normal'
+REJUDGE_QUEUE = 'treadmill.rejudge'
+RETRY_QUEUE = 'treadmill.retry'
 
 
 class WorkerFactory(object):
@@ -21,13 +29,18 @@ class WorkerFactory(object):
         self.broker = RedisBroker(host=config.REDIS_HOST, port=config.REDIS_PORT)
         self.context_factory = JudgeContextFactory(config)
 
-    def judge_task(self, request: JudgeRequest):
-        with self.context_factory.new(request) as context:
-            TreadmillJudgeTask().run(context)
+    def _judge(self, request):
+        request = JudgeRequest.schema().load(request)
+        with self.context_factory.new(request):
+            JudgePipeline().run()
 
+    def _retry(self, request):
+        self.judge_worker().send(request)
+
+    @cached
     def judge_worker(self):
         return dramatiq.Actor(
-            self.judge_task,
+            self._judge,
             broker=self.broker,
             actor_name='judge_worker',
             queue_name='normal',
@@ -35,50 +48,24 @@ class WorkerFactory(object):
             options={}
         )
 
-    def rejudge_worker(self):
+    @cached
+    def retry_worker(self):
         return dramatiq.Actor(
-            self.judge_task,
+            self._retry,
             broker=self.broker,
-            actor_name='rejudge_worker',
-            queue_name='rejudge',
-            priority=REJUDGE_PRIO,
+            actor_name='retry_worker',
+            queue_name='failed',
+            priority=LOW_PRIO,
             options={}
         )
 
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        'config', type=str, dest='config_class',
-        help='Configuration class to use (LocalConfig, StagingConfig, ProdConfig)'
-    )
-    parser.add_argument(
-        '--rejudge-only', '-R', type=bool, dest='rejudge_only',
-        help='Run rejudge actors only'
-    )
-
-    args = parser.parse_args()
-
-    config_module = importlib.import_module('treadmill.config')
-    args.config = getattr(config_module, args.config_class)()
-    if args.config is None:
-        raise ValueError(f'No config class named {args.config_class}')
-
-    return args
-
-
-def main():
-    args = parse_arguments()
-    factory = WorkerFactory(args.config)
-
-    # Declare required
-    if args.rejudge_only:
-        factory.rejudge_worker()
-    else:
-        factory.judge_worker()
-        factory.rejudge_worker()
-
-
-if __name__ == '__main__':
-    main()
+    @cached
+    def rejudge_worker(self):
+        return dramatiq.Actor(
+            self._judge,
+            broker=self.broker,
+            actor_name='rejudge_worker',
+            queue_name='rejudge',
+            priority=LOW_PRIO,
+            options={}
+        )

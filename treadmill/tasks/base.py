@@ -1,78 +1,83 @@
-import contextlib
-import os
+import inspect
+import threading
 from abc import abstractmethod
 
-from treadmill.context import JudgeContext
-from treadmill.models import TestSet, TestCase
+from treadmill.context import ContextMixin
 
 
-class PathMixin(object):
-    context: JudgeContext
-
-    @property
-    def _subm_src_file(self):
-        return ['sandbox', self.context.subm_lang.profile.src_file_name]
-
-    @property
-    def _subm_bin_file(self):
-        return ['sandbox', self.context.subm_lang.profile.bin_file_name]
-
-    @property
-    def _grader_src_file(self):
-        return ['sandbox', self.context.subm_lang.profile.bin_file_name]
-
-    @property
-    def _grader_bin_file(self):
-        return ['sandbox', self.context.grader_lang.profile.bin_file_name]
-
-    @staticmethod
-    def _test_input_file(testset: TestSet, testcase: TestCase):
-        return ['sandbox', str(testset.id), os.path.basename(testcase.input_file)]
-
-    @staticmethod
-    def _test_output_file(testset: TestSet, testcase: TestCase):
-        return ['answer', str(testset.id), os.path.basename(testcase.output_file)]
-
-    def _create_host_file(self, path, mode=None):
-        open(self.context.host_path(path), 'a').close()
-        if mode:
-            os.chmod(self.context.host_path(path), mode)
-
-    def _read_host_file(self, path):
-        with open(self.context.host_path(path), 'r') as f:
-            return f.read()
-
-    def _host_file_exists(self, path):
-        return os.path.exists(self.context.host_path(path))
+__all__ = [
+    'Task',
+    'Environ',
+    'push_environ',
+    'pop_environ',
+    'get_active_environs'
+]
 
 
-class SimpleTask(PathMixin):
-    context: JudgeContext
+def runnable(f):
+    return hasattr(f, 'run') and callable(f.run)
 
-    def run(self, context):
-        self.context = context
-        self._run_impl()
-        return self
+
+def run_generator_function_or_callable(f):
+    if inspect.isgeneratorfunction(f):
+        gen = f()
+        subtask_result = None
+        while True:
+            try:
+                subtask = gen.send(subtask_result)
+                subtask_result = subtask.run() if runnable(subtask) else None
+            except StopIteration as end:
+                return end.value
+    elif callable(f):
+        return f()
+
+
+class Task(ContextMixin):
+    def run(self):
+        run_generator_function_or_callable(self._run)
 
     @abstractmethod
-    def _run_impl(self):
+    def _run(self):
         pass
 
 
-class ContextTask(PathMixin):
-    context: JudgeContext
+global_environs = threading.local()
 
-    @contextlib.contextmanager
-    def run(self, context):
-        self.context = context
-        self._enter()
-        yield self
-        self._exit()
+
+def push_environ(env):
+    global global_environs
+    stack = global_environs.stack or []
+    stack.append(env)
+    global_environs.stack = stack
+
+
+def pop_environ():
+    global global_environs
+    stack = global_environs.stack
+    if stack:
+        ret = stack.pop()
+        global_environs.stack = stack or None
+        return ret
+
+
+def get_active_environs():
+    global global_environs
+    return list(global_environs.stack)
+
+
+class Environ(ContextMixin):
+    def __enter__(self):
+        push_environ(self)
+        run_generator_function_or_callable(self._setup)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pop_environ()
+        run_generator_function_or_callable(self._teardown)
 
     @abstractmethod
-    def _enter(self):
+    def _setup(self):
         pass
 
     @abstractmethod
-    def _exit(self):
+    def _teardown(self):
         pass

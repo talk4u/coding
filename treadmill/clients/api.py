@@ -3,7 +3,7 @@ import requests
 from treadmill.config import TreadmillConfig
 from treadmill.models import Submission, TestCaseJudgeResult, TestSetJudgeResult, JudgeResult
 from treadmill.signal import InternalApiError
-from treadmill.utils import DataClass
+from treadmill.utils import DataModel
 
 
 class APIClient(object):
@@ -16,7 +16,7 @@ class APIClient(object):
         return self._sess.get(self._config.API_ENDPOINT + path, **kwargs)
 
     def _post(self, path, data, **kwargs):
-        if isinstance(data, DataClass):
+        if isinstance(data, DataModel):
             data = data.schema().dump(data)
         return self._sess.post(self._config.API_ENDPOINT + path, data=data, **kwargs)
 

@@ -8,7 +8,7 @@ import marshmallow_enum
 
 
 __all__ = [
-    'DataClass'
+    'DataModel'
 ]
 
 
@@ -58,12 +58,12 @@ def _is_typing_dict(type_):
 _DATACLASSES = {}
 
 
-class DataClassMeta(type):
+class DataModelMeta(type):
     def __new__(mcs, typename, bases, ns):
         fields = {}
         field_defaults = {}
         for basecls in reversed(bases):
-            if type(basecls) is DataClassMeta:
+            if type(basecls) is DataModelMeta:
                 fields.update(basecls._fields)
                 field_defaults.update(basecls._field_defaults)
         annots = ns.get('__annotations__', {})
@@ -86,7 +86,7 @@ class DataClassMeta(type):
         return datacls
 
 
-class DataClass(object, metaclass=DataClassMeta):
+class DataModel(object, metaclass=DataModelMeta):
     """
     DataClass automatically defines __init__ instantiation and
     marshamallow schema from field annotation definition.
@@ -115,7 +115,7 @@ class DataClass(object, metaclass=DataClassMeta):
             return data
         elif hasattr(field_type, '__origin__'):
             return self._compose_container(field_type, data)
-        elif issubclass(field_type, DataClass):
+        elif issubclass(field_type, DataModel):
             return self._compose_dataclass(field_type, data)
         raise TypeError('Unsupported type ' + str(field_type))
 
@@ -142,6 +142,7 @@ class DataClass(object, metaclass=DataClassMeta):
                 default_val = cls._field_defaults.get(field_name)
                 schema_fields[field_name] = cls._marsh_field(field_type, default=default_val)
             cls.__schema__ = type(cls.__name__ + 'Schema', (marshmallow.Schema,), schema_fields)
+            cls.__post_load = marshmallow.post_load(lambda self, **kwargs: cls(**kwargs))
         return cls.__schema__()
 
     @classmethod
@@ -155,7 +156,7 @@ class DataClass(object, metaclass=DataClassMeta):
             )
         elif hasattr(field_type, '__origin__'):
             return cls._marsh_container_field(field_type)
-        elif issubclass(field_type, DataClass):
+        elif issubclass(field_type, DataModel):
             return cls._marsh_nested_field(field_type)
         raise TypeError('Unsupported type ' + field_type)
 

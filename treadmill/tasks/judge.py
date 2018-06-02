@@ -1,141 +1,127 @@
 from contextlib import ExitStack
-import filecmp
 
 from treadmill.models import *
 from treadmill.signal import *
+from treadmill.utils import ObjectDict
 
-from .base import SimpleTask
-from .container import BuilderContext, SandboxContext, CompileTask, ExecuteTask
-from .workspace import WorkspaceContext
+from .base import Task
+from .container import BuilderEnviron, SandboxEnviron, CompileTask, ExecuteTask
+from .workspace import WorkspaceEnviron
+from . import path
+from . import ops
 
 
-class JudgeTestSetTask(SimpleTask):
-    def __init__(self, subm_sandbox, grader_sandbox, testset):
-        self._subm_sandbox: SandboxContext = subm_sandbox
-        self._grader_sandbox: SandboxContext = grader_sandbox
-        self.testset = testset
-        self.subm_exec_result = None
-        self.score = 0
+class JudgeTask(Task):
+    def __init__(self, subm_sandbox, grader_sandbox):
+        self.subm_sandbox: SandboxEnviron = subm_sandbox
+        self.grader_sandbox: SandboxEnviron = grader_sandbox
 
-    def _save_testcase_result(self, testcase_id, status,
-                              memory_used_bytes=None,
-                              time_elapsed_seconds=None,
-                              error=None):
-        self.context.api_client.set_testcase_judge_result(
-            self.context.request.id,
-            self.testset.id,
-            testcase_id,
-            TestCaseJudgeResult(
-                status=status,
-                memory_used_bytes=memory_used_bytes,
-                time_elapsed_seconds=time_elapsed_seconds,
-                error=error
+    def _run(self):
+        for testset in self.context.judge_spec.testsets:
+            score = yield from self._judge_testset(testset)
+            yield ops.UpdateJudgeResultOp(
+                testset_id=testset.id,
+                score=score
             )
-        )
+        if self.context.total_score == self.context.judge_spec.total_score:
+            yield ops.UpdateJudgeResultOp(status=JudgeStatus.PASSED)
+        else:
+            yield ops.UpdateJudgeResultOp(status=JudgeStatus.FAILED)
 
-    def _save_testset_result(self, passed):
-        if passed:
-            self.score = self.context.judge_spec.testsets[self.testset.id].score
-
-        self.context.api_client.set_testset_judge_result(
-            self.context.request.id,
-            self.testset.id,
-            TestSetJudgeResult(score=self.score)
-        )
-
-    def _run_impl(self):
-        for testcase in self.testset.cases:
+    def _judge_testset(self, testset):
+        for testcase in testset.testcases:
             try:
-                meta = self._judge_testcase(testcase)
-                self._save_testcase_result(
-                    testcase.id,
-                    status=TestCaseJudgeStatus.PASS,
-                    memory_used_bytes=meta.max_rss,
-                    time_elapsed_seconds=meta.time
+                meta = yield from self._judge_testcase(testset, testcase)
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
+                    testcase_status=TestCaseJudgeStatus.PASSED,
+                    max_rss=meta.max_rss,
+                    time=meta.time
                 )
                 continue
-            except ServerFault:
-                self._save_testcase_result(
-                    testcase.id,
-                    status=TestCaseJudgeStatus.NOT_JUDGED
+            except ServerFault as e:
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
+                    testcase_status=TestCaseJudgeStatus.NOT_JUDGED,
+                    error=e.message
                 )
-                self._save_testset_result(passed=False)
                 raise
             except Timeout:
-                self._save_testcase_result(
-                    testcase.id,
-                    status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED,
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
+                    status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
                 )
             except OutOfMemory:
-                self._save_testcase_result(
-                    testcase.id,
-                    status=TestCaseJudgeStatus.MEMORY_LIMIT_EXCEEDED,
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
+                    status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
                 )
             except SubmissionRuntimeError:
-                self._save_testcase_result(
-                    testcase.id,
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
                     status=TestCaseJudgeStatus.RUNTIME_ERROR
                 )
             except WrongAnswer:
-                self._save_testcase_result(
-                    testcase.id,
+                yield ops.UpdateJudgeResultOp(
+                    testset_id=testset.id,
+                    testcase_id=testcase.id,
                     status=TestCaseJudgeStatus.WRONG_ANSWER
                 )
-            return
-        self.score = self.context.judge_spec.testsets[self.testset.id].score
-        self.context.api_client.set_testset_judge_result(
-            self.context.request.id,
-            self.testset.id,
-            TestSetJudgeResult(score=self.score)
+            return 0
+        return testset.score
+
+    def _judge_testcase(self, testset, testcase):
+        result: ExecuteTask.Result = yield ExecuteTask(
+            sandbox=self.subm_sandbox,
+            stdin_file=path.test_input_file(testset, testcase),
+            bin_file=path.subm_bin_file()
         )
-
-    def _judge_testcase(self, testcase):
-        input_file = self._test_input_file(self.testset, testcase)
-        expected_file = self.context.host_path(self._test_output_file(self.testset, testcase))
-
-        result = ExecuteTask(
-            sandbox=self._subm_sandbox,
-            stdin_file=input_file,
-            bin_file=self._subm_bin_file
-        ).run(self.context)
         subm_exec_meta = result.meta
 
         if not result.ok:
             if result.is_fatal:
                 raise IsolateExecutionError(result.output)
-            elif result.is_timeout:
+            elif result.timeout:
                 raise Timeout()
-            elif result.is_out_of_memory:
+            elif result.out_of_memory:
                 raise OutOfMemory()
             else:
                 raise SubmissionRuntimeError()
 
-        if self._grader_sandbox:
-            result = ExecuteTask(
-                sandbox=self._grader_sandbox,
+        if self.grader_sandbox:
+            result: ExecuteTask.Result = ExecuteTask(
+                sandbox=self.grader_sandbox,
                 stdin_file=result.stdout_file,
-                bin_file=self._grader_bin_file
-            ).run(self.context)
+                bin_file=path.grader_bin_file()
+            ).run()
 
             if not result.ok:
                 raise GraderRuntimeError(result.stderr)
 
-        output_file = self.context.host_path(result.stdout_file)
+        output_matches = yield ops.CompareFileOp(
+            target=result.stdout_file,
+            expected=path.test_output_file(testset, testcase)
+        )
 
-        if not filecmp.cmp(output_file, expected_file, shallow=False):
+        if not output_matches:
             raise WrongAnswer()
 
         return subm_exec_meta
 
 
-class CompileAllSourcesTask(SimpleTask):
-    def _run_impl(self):
-        with BuilderContext(lang=self.context.subm_lang) as subm_builder:
+class CompileAllSourcesTask(Task):
+    def _run(self):
+        with BuilderEnviron(lang=self.context.subm_lang) as subm_builder:
             result = CompileTask(
                 builder=subm_builder,
                 src_file=self._subm_src_file,
-                bin_file=self._subm_bin_file
-            ).run(self.context)
+                out_file=self._subm_bin_file
+            ).run()
 
             if result.exit_code != 0:
                 raise SubmissionCompileError(result.output)
@@ -145,63 +131,66 @@ class CompileAllSourcesTask(SimpleTask):
                     result = CompileTask(
                         builder=subm_builder,
                         src_file=self._grader_src_file,
-                        bin_file=self._grader_bin_file
-                    ).run(self.context)
+                        out_file=self._grader_bin_file
+                    ).run()
                 else:
-                    with BuilderContext(lang=self.context.grader_lang) as grader_builder:
+                    with BuilderEnviron(lang=self.context.grader_lang) as grader_builder:
                         result = CompileTask(
                             builder=grader_builder,
                             src_file=self._grader_src_file,
-                            bin_file=self._grader_bin_file
-                        ).run(self.context)
+                            out_file=self._grader_bin_file
+                        ).run()
 
                 if result.exit_code != 0:
                     raise GraderCompileError(result.output)
 
 
-class JudgeInSandboxTask(SimpleTask):
-    total_score: int
+class JudgeAllTestsTask(Task):
+    class Result(ObjectDict):
+        total_score: int
 
-    def _run_impl(self):
+    def _run(self) -> Result:
         with ExitStack() as stack:
-            subm_sandbox = SandboxContext(
+            subm_sandbox = SandboxEnviron(
                 lang=self.context.subm_lang,
                 isolated=True
             )
-            stack.enter_context(subm_sandbox.run(self.context))
+            stack.enter_context(subm_sandbox)
             if self.context.grader is not None:
-                grader_sandbox = SandboxContext(
+                grader_sandbox = SandboxEnviron(
                     lang=self.context.grader_lang,
                     isolated=False
                 )
-                stack.enter_context(grader_sandbox.run(self.context))
+                stack.enter_context(grader_sandbox)
             else:
                 grader_sandbox = None
 
-            self.total_score = 0
+            result = self.Result(total_score=0)
             for testset in self.context.judge_spec.testsets:
                 result = JudgeTestSetTask(
                     subm_sandbox=subm_sandbox,
                     grader_sandbox=grader_sandbox,
                     testset=testset
-                ).run(self.context)
-                self.total_score += result.score
+                ).run()
+                result.total_score += result.score
+
+            return result
 
 
-class TreadmillJudgeTask(SimpleTask):
+class TreadmillJudgeTask(Task):
     def set_judge_result(self, *, status, score=None):
         self.context.api_client.set_judge_result(
             self.context.request.id,
             JudgeResult(status=status, score=score)
         )
 
-    def _run_impl(self):
+    def run(self):
         try:
             self.context.submission = self.context.api_client.get_submission(self.context.request.submission_id)
             self.set_judge_result(status=JudgeStatus.IN_PROGRESS)
-            with WorkspaceContext():
-                CompileAllSourcesTask().run(self.context)
-                result = JudgeInSandboxTask().run(self.context)
+            with WorkspaceEnviron():
+                CompileAllSourcesTask().run()
+                result = JudgeAllTestsTask().run()
                 if result.total_score >= self.context.judge_spec.total_score:
                     self.set_judge_result(status=JudgeStatus.PASSED, score=result.total_score)
                 else:

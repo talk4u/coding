@@ -1,1 +1,1 @@
-from .judge import TreadmillJudgeTask
+from .pipeline import JudgePipeline

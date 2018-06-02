@@ -2,20 +2,20 @@ import enum
 from datetime import datetime
 from typing import Optional, List
 
-from treadmill.utils import DataClass
+from treadmill.utils import DataModel
 
 
 S3Key = str
 
 
-class TestCase(DataClass):
+class TestCase(DataModel):
     id: int  # index from 0
     input_file: S3Key
     output_file: S3Key
     created_at: datetime
 
 
-class TestSet(DataClass):
+class TestSet(DataModel):
     id: int  # index from 0
     score: int
     testcases: List[TestCase]
@@ -50,14 +50,14 @@ class Lang(enum.Enum):
         return [(p.value, p.name) for p in cls]
 
 
-class Grader(DataClass):
+class Grader(DataModel):
     src_file: S3Key
     lang: Lang
     created_at: datetime
     updated_at: datetime
 
 
-class JudgeSpec(DataClass):
+class JudgeSpec(DataModel):
     total_score: int
     testsets: List[TestSet]
     grader: Optional[Grader]
@@ -68,11 +68,11 @@ class JudgeSpec(DataClass):
     updated_at: datetime
 
 
-class Problem(DataClass):
+class Problem(DataModel):
     judge_spec: JudgeSpec
 
 
-class Submission(DataClass):
+class Submission(DataModel):
     id: int
     user_id: int
     problem: Problem
@@ -99,30 +99,33 @@ class TestCaseJudgeStatus(enum.Enum):
     WRONG_ANSWER = 'WA'
     MEMORY_LIMIT_EXCEEDED = 'MLE'
     TIME_LIMIT_EXCEEDED = 'TLE'
-    PASS = 'PASS'
+    PASSED = 'PASS'
 
     @classmethod
     def choices(cls):
         return [(p.value, p.name) for p in cls]
 
 
-class TestCaseJudgeResult(DataClass):
+class TestCaseJudgeResult(DataModel):
     status: TestCaseJudgeStatus
     memory_used_bytes: Optional[int] = 0
     time_elapsed_seconds: Optional[float] = 0.0
     error_msg: Optional[str] = None
 
 
-class TestSetJudgeResult(DataClass):
+class TestSetJudgeResult(DataModel):
     score: int
 
 
-class JudgeResult(DataClass):
+class JudgeResult(DataModel):
     status: JudgeStatus
-    score: int
+    error: Optional[str]
+    total_score: int
+    time_elapsed_seconds: float
+    memory_used_bytes: int
 
 
-class JudgeRequest(DataClass):
+class JudgeRequest(DataModel):
     id: int
     submission_id: int
     rejudge: bool

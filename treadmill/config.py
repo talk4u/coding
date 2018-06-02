@@ -41,11 +41,9 @@ class TreadmillConfig(object):
             return cls.PY3_SANDBOX_TAG
 
 
-class LocalConfig(TreadmillConfig):
-    API_ENDPOINT = 'http://localhost:8080/api'
-    API_TOKEN = ''
-
-    REDIS_HOST = 'localhost'
-
-    HOST_WORKSPACE_ROOT = os.environ.get('HOST_WORKSPACE_ROOT', default='~/Temp/treadmill/workspace')
-    S3FS_ROOT = os.environ.get('S3FS_ROOT', default='~/mnt/talk4u-data')
+dev_config = TreadmillConfig()
+dev_config.API_ENDPOINT = 'http://localhost:8080/api'
+dev_config.API_TOKEN = ''
+dev_config.REDIS_HOST = 'localhost'
+dev_config.HOST_WORKSPACE_ROOT = os.environ['TM_HOST_WORKSPACE_ROOT']
+dev_config.S3FS_ROOT = os.environ['TM_S3FS_ROOT']
