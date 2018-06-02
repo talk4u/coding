@@ -36,7 +36,3 @@ class JudgePipeline(Task):
                 status=JudgeStatus.INTERNAL_ERROR,
                 error=str(e)
             )
-
-
-class RetryPipeline(Task):
-    def _run(self):
