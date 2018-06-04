@@ -24,14 +24,6 @@ class JudgePipeline(Task):
             raise
         except (ServerFault, Exception) as e:
             self.context.log_current_error()
-            yield ops.ArchiveJudgeRequest()
-            yield ops.UpdateJudgeResultOp(
-                status=JudgeStatus.INTERNAL_ERROR,
-                error=str(e)
-            )
-        except Exception as e:
-            self.context.log_current_error()
-            yield ops.ArchiveJudgeRequest()
             yield ops.UpdateJudgeResultOp(
                 status=JudgeStatus.INTERNAL_ERROR,
                 error=str(e)

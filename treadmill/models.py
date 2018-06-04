@@ -24,13 +24,14 @@ class TestSet(DataModel):
 
 
 class LangProfile(enum.Enum):
-    CPP = ('g++ 6.4.0', 'main.cpp', 'main')
-    JAVA = ('OpenJDK 8u151', 'Main.java', 'Main.class')
-    PYTHON3 = ('Python 3.6.5', 'main.py', 'main.py')
-    GO = ('Go 1.10.1', 'main.go', 'main')
+    CPP = ('g++ 6.4.0', True, 'main.cpp', 'main')
+    JAVA = ('OpenJDK 8u151', True, 'Main.java', 'Main.class')
+    PYTHON3 = ('Python 3.6.5', False, 'main.py', 'main.py')
+    GO = ('Go 1.10.1', True, 'main.go', 'main')
 
-    def __init__(self, version, src_file_name, bin_file_name):
+    def __init__(self, version, need_compile, src_file_name, bin_file_name):
         self.version = version
+        self.need_compile = need_compile
         self.src_file_name = src_file_name
         self.bin_file_name = bin_file_name
 

@@ -6,8 +6,7 @@ import raven
 
 from treadmill.models import JudgeRequest, Submission, JudgeSpec, Grader, Lang
 from treadmill.clients import APIClient
-from treadmill.config import TreadmillConfig
-from treadmill.worker import WorkerFactory
+from treadmill.config import BaseConfig
 
 
 global_context = threading.local()
@@ -35,7 +34,6 @@ class JudgeContextFactory(object):
         self.docker_client = docker.from_env()
         self.api_client = APIClient(config)
         self.sentry_client = config.SENTRY_DSN and raven.Client(config.SENTRY_DSN)
-        self.worker_factory = WorkerFactory(config)
 
     def new(self, request):
         return JudgeContext(
@@ -43,14 +41,13 @@ class JudgeContextFactory(object):
             config=self.config,
             docker_client=self.docker_client,
             api_client=self.api_client,
-            sentry_client=self.sentry_client,
-            worker_factory=self.worker_factory
+            sentry_client=self.sentry_client
         )
 
 
 class JudgeContext(object):
     request: JudgeRequest
-    config: TreadmillConfig
+    config: BaseConfig
     submission: Submission
     judge_spec: JudgeSpec
     subm_lang: Lang
@@ -64,15 +61,13 @@ class JudgeContext(object):
     docker_client: docker.DockerClient
     api_client: APIClient
     sentry_client: raven.Client
-    worker_factory: WorkerFactory
 
     def __init__(self, *,
                  request: JudgeRequest,
-                 config: TreadmillConfig,
+                 config: BaseConfig,
                  docker_client: docker.DockerClient,
                  api_client: APIClient,
-                 sentry_client: raven.Client,
-                 worker_factory: WorkerFactory):
+                 sentry_client: raven.Client):
         self.request = request
         self.config = config
 
@@ -83,7 +78,6 @@ class JudgeContext(object):
         self.docker_client = docker_client
         self.api_client = api_client
         self.sentry_client = sentry_client
-        self.worker_factory = worker_factory
 
     def __enter__(self):
         set_current_context(self)

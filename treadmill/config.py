@@ -2,17 +2,17 @@ import os
 from .models import Lang
 
 
-class TreadmillConfig(object):
-    API_ENDPOINT: str
-    API_TOKEN: str
+class BaseConfig(object):
+    API_ENDPOINT: str = None
+    API_TOKEN: str = None
 
-    REDIS_HOST: str
-    REDIS_PORT = 6537
+    REDIS_HOST: str = None
+    REDIS_PORT: int = 6537
 
-    SENTRY_DSN = ''
+    SENTRY_DSN: str = None
 
-    HOST_WORKSPACE_ROOT: str
-    S3FS_ROOT: str
+    HOST_WORKSPACE_ROOT: str = None
+    S3FS_ROOT: str = None
 
     GCC_BUILDER_TAG = 'talk4u/treadmill-builder-gcc:v0.1.0'
     GO_BUILDER_TAG = 'talk4u/treadmill-builder-go110:v0.1.0'
@@ -21,6 +21,16 @@ class TreadmillConfig(object):
     NATIVE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-native:v0.1.0'
     JRE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-jre8:v0.1.0'
     PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.0'
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def _set_prop(self, key, kwargs):
+        if key in kwargs:
+            setattr(self, key, kwargs.pop(key))
+        else:
+            setattr(self, key, os.environ['TM_' + key])
 
     @classmethod
     def builder_container_tag(cls, lang):
@@ -41,9 +51,16 @@ class TreadmillConfig(object):
             return cls.PY3_SANDBOX_TAG
 
 
-dev_config = TreadmillConfig()
-dev_config.API_ENDPOINT = 'http://localhost:8080/api'
-dev_config.API_TOKEN = ''
-dev_config.REDIS_HOST = 'localhost'
-dev_config.HOST_WORKSPACE_ROOT = os.environ['TM_HOST_WORKSPACE_ROOT']
-dev_config.S3FS_ROOT = os.environ['TM_S3FS_ROOT']
+class DevConfig(BaseConfig):
+    API_ENDPOINT = 'http://localhost:8080/api'
+    API_TOKEN = ''
+    REDIS_HOST = 'localhost'
+
+    def __init__(self, **kwargs):
+        self._set_prop('HOST_WORKSPACE_ROOT', kwargs)
+        self._set_prop('S3FS_ROOT', kwargs)
+        super().__init__(**kwargs)
+
+
+class TestConfig(BaseConfig):
+    pass

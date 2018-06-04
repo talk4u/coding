@@ -1,7 +1,5 @@
 class TreadmillSignal(Exception):
     message = None
-    retryable = False
-    api_server_reachable = True
 
     def __init__(self, message=None):
         if message:
@@ -15,9 +13,11 @@ class TreadmillSignal(Exception):
 # Temporary errors (retry works)
 # =========================================================
 
-class InternalApiError(TreadmillSignal):
-    retryable = True
-    api_server_reachable = False
+class RetryableError(TreadmillSignal):
+    pass
+
+
+class InternalApiError(RetryableError):
     """ Main API server is down or some error has occurred """
     pass
 

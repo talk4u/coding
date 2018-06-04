@@ -10,3 +10,6 @@ class Operation(ContextMixin):
     @abstractmethod
     def _run(self):
         pass
+
+    def __repr__(self):
+        return repr(self.__dict__)

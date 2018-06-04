@@ -16,15 +16,19 @@ __all__ = [
 
 class CompileStage(Task):
     def _run(self):
-        with BuilderEnviron(lang=self.context.subm_lang) as subm_builder:
-            yield from self._build_subm(subm_builder)
-            if self.context.grader is None:
-                return
-            if self.context.subm_lang == self.context.grader_lang:
-                yield from self._build_grader(subm_builder)
-                return
-        with BuilderEnviron(lang=self.context.grader_lang) as grader_builder:
-            yield from self._build_grader(grader_builder)
+        subm_lang = self.context.subm_lang
+        if subm_lang.profile.need_compile:
+            with BuilderEnviron(lang=self.context.subm_lang) as subm_builder:
+                yield from self._build_subm(subm_builder)
+                if self.context.grader and self.context.subm_lang == self.context.grader_lang:
+                    yield from self._build_grader(subm_builder)
+                    return
+
+        if self.context.grader:
+            grader_lang = self.context.grader_lang
+            if grader_lang.profile.need_compile:
+                with BuilderEnviron(lang=self.context.grader_lang) as grader_builder:
+                    yield from self._build_grader(grader_builder)
 
     @staticmethod
     def _build_subm(builder):

@@ -8,10 +8,16 @@ from treadmill.context import ContextMixin
 from treadmill.models import Lang, IsolateExecMeta
 from treadmill.signal import UnsupportedLanguage, IsolateInitFail
 from treadmill.utils import ObjectDict
-
-from . import path
+from .base import Environ, Task
 from . import ops
-from .base import Task, Environ
+from . import path
+
+__all__ = [
+    'BuilderEnviron',
+    'SandboxEnviron',
+    'CompileTask',
+    'ExecuteTask'
+]
 
 
 class BuilderEnviron(Environ):
@@ -20,12 +26,16 @@ class BuilderEnviron(Environ):
         self.container: Container = None
 
     def _setup(self):
+        container_tag = self.context.config.builder_container_tag(self.lang)
+        if container_tag is None:
+            raise UnsupportedLanguage(self.lang)
         self.container = yield ops.RunDockerContainerOp(
-            container_tag=self.context.config.builder_container_tag(self.lang),
+            container_tag=container_tag,
         )
 
     def _teardown(self):
-        yield ops.KillDockerContainerOp(self.container)
+        if self.container:
+            yield ops.KillDockerContainerOp(self.container)
 
     def compile(self, src_file, out_file):
         src_file = src_file.container_path
@@ -47,8 +57,6 @@ class BuilderEnviron(Environ):
                 container=self.container,
                 cmd=['go', 'build', '-o', out_file, src_file]
             )
-        elif self.lang == Lang.PYTHON3:
-            pass
         else:
             raise UnsupportedLanguage(self.lang)
 

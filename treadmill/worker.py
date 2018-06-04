@@ -1,12 +1,12 @@
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 
-from treadmill.models import JudgeRequest
+from treadmill.config import BaseConfig
 from treadmill.context import JudgeContextFactory
-from treadmill.config import TreadmillConfig
+from treadmill.models import JudgeRequest
+from treadmill.signal import RetryableError
 from treadmill.tasks import JudgePipeline
 from treadmill.utils import cached
-
 
 __all__ = [
     'WorkerFactory'
@@ -24,15 +24,20 @@ RETRY_QUEUE = 'treadmill.retry'
 
 
 class WorkerFactory(object):
-    def __init__(self, config: TreadmillConfig):
+    def __init__(self, config: BaseConfig):
         self.config = config
         self.broker = RedisBroker(host=config.REDIS_HOST, port=config.REDIS_PORT)
         self.context_factory = JudgeContextFactory(config)
 
-    def _judge(self, request):
-        request = JudgeRequest.schema().load(request)
+    def _judge(self, request_data):
+        request = JudgeRequest.schema().load(request_data)
         with self.context_factory.new(request):
-            JudgePipeline().run()
+            try:
+                JudgePipeline().run()
+            except RetryableError:
+                raise
+            except Exception:
+                self.retry_worker().send(request_data)
 
     def _retry(self, request):
         self.judge_worker().send(request)

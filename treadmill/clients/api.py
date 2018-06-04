@@ -1,13 +1,13 @@
 import requests
 
-from treadmill.config import TreadmillConfig
+from treadmill.config import BaseConfig
 from treadmill.models import Submission, TestCaseJudgeResult, TestSetJudgeResult, JudgeResult
 from treadmill.signal import InternalApiError
 from treadmill.utils import DataModel
 
 
 class APIClient(object):
-    def __init__(self, config: TreadmillConfig):
+    def __init__(self, config: BaseConfig):
         self._config = config
         self._sess = requests.Session()
         self._sess.headers['Authorization'] = self._config.API_TOKEN
