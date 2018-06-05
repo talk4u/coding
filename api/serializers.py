@@ -6,7 +6,7 @@ from rest_framework.fields import SerializerMethodField
 
 import api.models as models
 from api.s3 import read_file, get_files_in_directory
-from api.utils import is_student
+from api.utils import is_student, get_latest_judge_result_queryset
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,10 +23,12 @@ class ProblemSummarySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'max_score', 'slug')
 
     def get_max_score(self, obj):
-        max_score = models.JudgeResult.objects.filter(
+        qs = models.JudgeResult.objects.filter(
             submission__problem=obj,
             submission__user=self.context['request'].user
-        ).aggregate(Max('score')).get('score__max', 0)
+        )
+        results = get_latest_judge_result_queryset(qs)
+        max_score = results.aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
 
@@ -91,10 +93,12 @@ class ProblemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_max_score(self, obj):
-        max_score = models.JudgeResult.objects.filter(
+        qs = models.JudgeResult.objects.filter(
             submission__problem=obj,
             submission__user=self.context['request'].user
-        ).aggregate(Max('score')).get('score__max', 0)
+        )
+        results = get_latest_judge_result_queryset(qs)
+        max_score = results.aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
 

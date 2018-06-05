@@ -1,3 +1,5 @@
+from django.db.models import Max
+
 import api.models as models
 
 
@@ -10,11 +12,21 @@ def is_instructor(user):
 
 
 def is_solver(problem, user):
-    return models.JudgeResult.objects.filter(
-        status=models.JudgeStatus.PASSED.value,
-        score=100,
-        submission__user=user
+    return get_latest_judge_result_queryset(
+        models.JudgeResult.objects.filter(
+            status=models.JudgeStatus.PASSED.value,
+            score=100,
+            submission__user=user,
+            submission__problem=problem
+        )
     ).exists()
+
+
+def get_latest_judge_result_queryset(qs):
+    latest_dates = qs.values('submission_id').annotate(
+        latest_created_at=Max('created_at')
+    )
+    return qs.filter(created_at__in=latest_dates.values('latest_created_at'))
 
 
 def update_dict_in_exist_keys(dict1, dict2):
