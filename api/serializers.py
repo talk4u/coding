@@ -35,6 +35,8 @@ class ProblemSummarySerializer(serializers.ModelSerializer):
 class GymSerializer(serializers.ModelSerializer):
     problems = SerializerMethodField()
     recently_showed_users = SerializerMethodField()
+    problem_total_count = SerializerMethodField()
+    problem_solved_count = SerializerMethodField()
 
     class Meta:
         model = models.Gym
@@ -43,17 +45,17 @@ class GymSerializer(serializers.ModelSerializer):
     def get_problems(self, obj):
         user = self.context['request'].user
         problems = obj.problems.all().order_by('gymproblem__order')
-        problem_summary_list, zero_cnt = [], 0
+        problem_summary_list, non_solved_cnt = [], 0
         for problem in problems:
             problem_summary = ProblemSummarySerializer(
                 problem, context=self.context
             ).data
-            if problem_summary['max_score'] == 0:
-                zero_cnt += 1
+            if problem_summary['max_score'] != 100:
+                non_solved_cnt += 1
 
             problem_summary_list.append(problem_summary)
 
-            if zero_cnt >= 3 and is_student(user):
+            if non_solved_cnt >= 3 and is_student(user):
                 break
 
         return problem_summary_list
@@ -70,6 +72,22 @@ class GymSerializer(serializers.ModelSerializer):
             Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id)
         )
         return UserSerializer(users, many=True).data
+
+    @staticmethod
+    def get_problem_total_count(obj):
+        return obj.problems.all().count()
+
+    def get_problem_solved_count(self, obj):
+        problems = obj.problems.all()
+        solved_problem_cnt = 0
+        for problem in problems:
+            problem_summary = ProblemSummarySerializer(
+                problem, context=self.context
+            ).data
+            if problem_summary['max_score'] == 100:
+                solved_problem_cnt += 1
+
+        return solved_problem_cnt
 
 
 class TagSerializer(serializers.ModelSerializer):
