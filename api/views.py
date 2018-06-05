@@ -8,7 +8,8 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 import api.models as models
 import api.serializers as serializers
 from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
-from api.utils import is_student, is_instructor, update_dict_in_exist_keys
+from api.utils import is_student, is_instructor, update_dict_in_exist_keys, \
+    get_latest_judge_result_queryset
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -28,9 +29,11 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
 
 
 class RankViewSet(NestedViewSetMixin, ModelViewSet):
-    queryset = models.JudgeResult.objects.filter(
-        status=models.JudgeStatus.passed.value,
-        score=100
+    queryset = get_latest_judge_result_queryset(
+        models.JudgeResult.objects.filter(
+            status=models.JudgeStatus.PASSED.value,
+            score=100
+        )
     )
     serializer_class = serializers.ProblemRankSerializer
     filter_backends = (filters.OrderingFilter,)
@@ -81,8 +84,9 @@ class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        results = models.JudgeResult.objects.all() if is_instructor(user) \
+        qs = models.JudgeResult.objects.all() if is_instructor(user) \
             else models.JudgeResult.objects.filter(submission__user=user)
+        results = get_latest_judge_result_queryset(qs)
         return results.order_by('-created_at')
 
     def get_serializer_class(self):
@@ -110,7 +114,7 @@ class JudgeViewSet(ModelViewSet):
             updated_testcases = []
             for testcase in testset['testcases']:
                 if int(testset['id']) == int(testset_id) and \
-                        int(testcase['id']) == int(testcase_id):
+                                int(testcase['id']) == int(testcase_id):
                     testcase = update_dict_in_exist_keys(
                         testcase, partial_data
                     )

@@ -6,7 +6,7 @@ from rest_framework.fields import SerializerMethodField
 
 import api.models as models
 from api.s3 import read_file, get_files_in_directory
-from api.utils import is_student
+from api.utils import is_student, get_latest_judge_result_queryset
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,16 +23,20 @@ class ProblemSummarySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'max_score', 'slug')
 
     def get_max_score(self, obj):
-        max_score = models.JudgeResult.objects.filter(
+        qs = models.JudgeResult.objects.filter(
             submission__problem=obj,
             submission__user=self.context['request'].user
-        ).aggregate(Max('score')).get('score__max', 0)
+        )
+        results = get_latest_judge_result_queryset(qs)
+        max_score = results.aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
 
 class GymSerializer(serializers.ModelSerializer):
     problems = SerializerMethodField()
     recently_showed_users = SerializerMethodField()
+    problem_total_count = SerializerMethodField()
+    problem_solved_count = SerializerMethodField()
 
     class Meta:
         model = models.Gym
@@ -41,17 +45,17 @@ class GymSerializer(serializers.ModelSerializer):
     def get_problems(self, obj):
         user = self.context['request'].user
         problems = obj.problems.all().order_by('gymproblem__order')
-        problem_summary_list, zero_cnt = [], 0
+        problem_summary_list, non_solved_cnt = [], 0
         for problem in problems:
             problem_summary = ProblemSummarySerializer(
                 problem, context=self.context
             ).data
-            if problem_summary['max_score'] == 0:
-                zero_cnt += 1
+            if problem_summary['max_score'] != 100:
+                non_solved_cnt += 1
 
             problem_summary_list.append(problem_summary)
 
-            if zero_cnt >= 3 and is_student(user):
+            if non_solved_cnt >= 3 and is_student(user):
                 break
 
         return problem_summary_list
@@ -68,6 +72,22 @@ class GymSerializer(serializers.ModelSerializer):
             Q(id__in=user_ids) & ~Q(id=self.context['request'].user.id)
         )
         return UserSerializer(users, many=True).data
+
+    @staticmethod
+    def get_problem_total_count(obj):
+        return obj.problems.all().count()
+
+    def get_problem_solved_count(self, obj):
+        problems = obj.problems.all()
+        solved_problem_cnt = 0
+        for problem in problems:
+            problem_summary = ProblemSummarySerializer(
+                problem, context=self.context
+            ).data
+            if problem_summary['max_score'] == 100:
+                solved_problem_cnt += 1
+
+        return solved_problem_cnt
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -91,10 +111,12 @@ class ProblemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_max_score(self, obj):
-        max_score = models.JudgeResult.objects.filter(
+        qs = models.JudgeResult.objects.filter(
             submission__problem=obj,
             submission__user=self.context['request'].user
-        ).aggregate(Max('score')).get('score__max', 0)
+        )
+        results = get_latest_judge_result_queryset(qs)
+        max_score = results.aggregate(Max('score')).get('score__max', 0)
         return max_score if max_score else 0
 
 
@@ -180,7 +202,6 @@ class ProblemForJudgeSerializer(serializers.ModelSerializer):
 
 class SubmissionForJudgeSerializer(serializers.ModelSerializer):
     problem = ProblemForJudgeSerializer()
-    lang = serializers.CharField(source='lang_profile')
     src_file = serializers.CharField(source='submission_data')
 
     class Meta:
