@@ -40,6 +40,9 @@ class Task(ContextMixin):
     def _run(self):
         pass
 
+    def __repr__(self):
+        return repr(self.__dict__)
+
 
 global_environs = threading.local()
 
@@ -81,3 +84,6 @@ class Environ(ContextMixin):
     @abstractmethod
     def _teardown(self):
         pass
+
+    def __repr__(self):
+        return repr(self.__dict__)

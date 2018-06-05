@@ -42,21 +42,24 @@ class BuilderEnviron(Environ):
         out_file = out_file.container_path
 
         if self.lang == Lang.CPP:
-            yield ops.ExecInDockerContainerOp(
+            result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
                 cmd=['g++', '-o', out_file, src_file]
             )
+            return result
         elif self.lang == Lang.JAVA:
             dest_dir = os.path.dirname(out_file)
-            yield ops.ExecInDockerContainerOp(
+            result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
                 cmd=['javac', '-d', dest_dir, src_file]
             )
+            return result
         elif self.lang == Lang.GO:
-            yield ops.ExecInDockerContainerOp(
+            result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
                 cmd=['go', 'build', '-o', out_file, src_file]
             )
+            return result
         else:
             raise UnsupportedLanguage(self.lang)
 
@@ -104,7 +107,7 @@ class SandboxEnviron(Environ):
             raise UnsupportedLanguage(self.lang)
 
     def _exec_normal(self, *, bin_file, stdin_file, stdout_file):
-        return ops.ExecInDockerContainerOp(
+        result = yield ops.ExecInDockerContainerOp(
             self.container,
             cmd=self._get_run_cmd(bin_file) + [
                 '<', stdin_file,
@@ -112,10 +115,11 @@ class SandboxEnviron(Environ):
             ],
             privileged=False
         )
+        return result
 
     def _exec_in_isolate(self, *, bin_file, stdin_file, stdout_file, stderr_file,
                          meta_file, limits):
-        return ops.ExecInDockerContainerOp(
+        result = yield ops.ExecInDockerContainerOp(
             container=self.container,
             cmd=[
                 'isolate',
@@ -135,11 +139,12 @@ class SandboxEnviron(Environ):
             ],
             privileged=True
         )
+        return result
 
     def exec(self, *, bin_file, stdin_file, stdout_file, stderr_file=None,
              meta_file=None, limits=None):
         if self.isolated:
-            return self._exec_in_isolate(
+            result = yield from self._exec_in_isolate(
                 bin_file=bin_file.sandbox_path,
                 stdin_file=stdin_file.sandbox_path,
                 stdout_file=stdout_file.sandbox_path,
@@ -148,11 +153,12 @@ class SandboxEnviron(Environ):
                 limits=limits
             )
         else:
-            return self._exec_normal(
+            result = yield from self._exec_normal(
                 bin_file=bin_file.container_path,
                 stdin_file=stdin_file.container_path,
                 stdout_file=stdout_file.container_path
             )
+        return result
 
 
 class CompileTask(Task):
@@ -241,7 +247,7 @@ class ExecuteTask(Task):
         if self.sandbox.isolated:
             yield ops.CreateFileOp(meta_file, mode=666)
 
-        result.exit_code, result.output = yield self.sandbox.exec(
+        result.exit_code, result.output = yield from self.sandbox.exec(
             bin_file=self.bin_file,
             stdin_file=self.stdin_file,
             stdout_file=stdout_file,

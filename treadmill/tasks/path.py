@@ -58,7 +58,7 @@ class AFP(ContextMixin):
 
 
 ROOT = AFP(path=[], sandbox_visible=False)
-SANDBOX_ROOT = AFP(path=[AFP.sandbox_prefix])
+SANDBOX_ROOT = AFP(path=[], sandbox_visible=True)
 
 
 def subm_src_file():
