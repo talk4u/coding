@@ -175,6 +175,15 @@ class TestSandboxEnviron(ContextMixin):
         util.assert_props(teardown_steps.send(None), ops.KillDockerContainerOp,
                           container=container)
 
+    def test_unsupported_language_sandbox_setup_fail(self):
+        sandbox_env = util.Wrap(SandboxEnviron(lang=Lang.UNKNOWN, isolated=False))
+        setup_steps = sandbox_env.setup()
+
+        with pytest.raises(UnsupportedLanguage):
+            setup_steps.send(None)
+
+        sandbox_env.teardown([])
+
     def test_isolated_sandbox_setup(self):
         sandbox_env = util.Wrap(SandboxEnviron(lang=Lang.CPP, isolated=True))
         setup_steps = sandbox_env.setup()

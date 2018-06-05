@@ -67,11 +67,14 @@ class BuilderEnviron(Environ):
 class SandboxEnviron(Environ):
     def __init__(self, *, lang, isolated):
         self.lang = lang
-        self.container_tag = self.context.config.sandbox_container_tag(lang)
         self.container = None
         self.isolated = isolated
 
     def _setup(self):
+        container_tag = self.context.config.sandbox_container_tag(self.lang)
+        if container_tag is None:
+            raise UnsupportedLanguage(self.lang)
+
         self.container = yield ops.RunDockerContainerOp(
             container_tag=self.context.config.sandbox_container_tag(self.lang),
             privileged=self.isolated
@@ -94,7 +97,8 @@ class SandboxEnviron(Environ):
                 raise IsolateInitFail(init_result.output)
 
     def _teardown(self):
-        yield ops.KillDockerContainerOp(self.container)
+        if self.container:
+            yield ops.KillDockerContainerOp(self.container)
 
     def _get_run_cmd(self, bin_file: str):
         if self.lang in [Lang.CPP, Lang.GO]:
@@ -127,7 +131,7 @@ class SandboxEnviron(Environ):
                 f'--mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',
-                f'--extra-time={limits.time_limit_seconds + 1}',
+                f'--extra-time=1.0',
                 f'--fsize={limits.file_size_limit_kilos}',
                 f'--processes={limits.pid_limits}',
                 f'--stdin={stdin_file}',

@@ -41,6 +41,7 @@ class Lang(enum.Enum):
     JAVA = 'java'
     PYTHON3 = 'python3'
     GO = 'go'
+    UNKNOWN = ''
 
     @property
     def profile(self) -> LangProfile:
