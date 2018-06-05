@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 
 from django.contrib.auth.models import User
@@ -141,11 +142,11 @@ class Tag(BaseModel):
         return self.name
 
 
-class LanguageProfile(Enum):
-    cpp = 'c++'
-    java = 'java'
-    python3 = 'python3'
-    go = 'go'
+class Lang(Enum):
+    CPP = 'c++'
+    JAVA = 'java'
+    PYTHON3 = 'python3'
+    GO = 'go'
 
     @classmethod
     def choices(cls):
@@ -157,9 +158,8 @@ class LanguageProfile(Enum):
 class Submission(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
-    lang_profile = models.CharField(
-        max_length=20, choices=LanguageProfile.choices()
-    )
+    lang = models.CharField(max_length=20, choices=Lang.choices())
+    code_size = models.IntegerField()
 
     submission_data = models.FileField(
         upload_to=get_submission_path, storage=MediaStorage()
@@ -172,7 +172,7 @@ class Submission(BaseModel):
 
     def __str__(self):
         return '%s 문제에 대한 %s 의 제출 (%s)' % (
-            self.problem.name, self.user.name, self.lang_profile
+            self.problem.name, self.user.name, self.lang
         )
 
     def save(self, *args, **kwargs):
@@ -190,12 +190,12 @@ class Submission(BaseModel):
 
 
 class JudgeStatus(Enum):
-    enqueued = 'ENQ'
-    in_progress = 'IP'
-    compile_error = 'CTE'
-    passed = 'PASS'
-    failed = 'FAIL'
-    internal_error = 'ERR'
+    ENQUEUED = 'ENQ'
+    IN_PROGRESS = 'IP'
+    COMPILE_ERROR = 'CTE'
+    PASSED = 'PASS'
+    FAILED = 'FAIL'
+    INTERNAL_ERROR = 'ERR'
 
     @classmethod
     def choices(cls):
@@ -223,7 +223,7 @@ class JudgeResult(BaseModel):
     submission = models.OneToOneField(Submission, on_delete=models.CASCADE)
     status = models.CharField(max_length=255, choices=JudgeStatus.choices())
     memory_used_bytes = models.IntegerField()
-    time_elapsed_seconds = models.IntegerField()
+    time_elapsed_seconds = models.FloatField()
     code_size = models.IntegerField()
     score = models.IntegerField()
     detail = JSONField()
