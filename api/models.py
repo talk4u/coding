@@ -117,10 +117,10 @@ class JudgeSpec(BaseModel):
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
     mem_limit_bytes = models.IntegerField()
-    time_limit_seconds = models.IntegerField()
+    time_limit_seconds = models.FloatField()
 
-    grader = models.URLField()
-    test_data = models.URLField()
+    grader = models.CharField(max_length=255)
+    test_data = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'judge_spec'
@@ -219,7 +219,7 @@ class TestCaseJudgeStatus(Enum):
 
 
 class JudgeResult(BaseModel):
-    submission = models.OneToOneField(Submission, on_delete=models.CASCADE)
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
     status = models.CharField(max_length=255, choices=JudgeStatus.choices())
     memory_used_bytes = models.IntegerField()
     time_elapsed_seconds = models.FloatField()
