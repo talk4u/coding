@@ -264,7 +264,7 @@ class JudgeResult(BaseModel):
             s += case_counts[i]
 
         return JudgeResult.objects.create(
-            submission=submission, status=JudgeStatus.enqueued.value,
+            submission=submission, status=JudgeStatus.ENQUEUED.value,
             detail=test_sets, score=0,
             memory_used_bytes=0,
             time_elapsed_seconds=0,
