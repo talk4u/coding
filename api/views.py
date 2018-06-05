@@ -1,3 +1,4 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
@@ -74,6 +75,9 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
 class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,
                           IsOwnerOrInstructor,)
+
+    filter_backends = (DjangoFilterBackend, )
+    filter_fields = ('status',)
 
     def get_queryset(self):
         user = self.request.user

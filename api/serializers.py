@@ -84,10 +84,18 @@ class ProblemSerializer(serializers.ModelSerializer):
     time_limit_seconds = serializers.IntegerField(
         source='judge_spec.time_limit_seconds'
     )
+    max_score = SerializerMethodField()
 
     class Meta:
         model = models.Problem
         fields = '__all__'
+
+    def get_max_score(self, obj):
+        max_score = models.JudgeResult.objects.filter(
+            submission__problem=obj,
+            submission__user=self.context['request'].user
+        ).aggregate(Max('score')).get('score__max', 0)
+        return max_score if max_score else 0
 
 
 class ProblemRankSerializer(serializers.ModelSerializer):
