@@ -1,4 +1,3 @@
-from collections import defaultdict
 from enum import Enum
 
 from django.contrib.auth.models import User
