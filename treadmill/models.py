@@ -129,6 +129,7 @@ class JudgeResult(DataModel):
 
 class JudgeRequest(DataModel):
     id: int
+    problem_id: int
     submission_id: int
     rejudge: bool
     created_at: datetime

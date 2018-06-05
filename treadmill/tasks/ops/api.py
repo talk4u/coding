@@ -8,11 +8,12 @@ __all__ = [
 
 
 class FetchSubmissionOp(Operation):
-    def __init__(self, submission_id):
-        self.submission_id = submission_id
+    def __init__(self, problem_id, subm_id):
+        self.problem_id = problem_id
+        self.subm_id = subm_id
 
     def _run(self):
-        subm = self.context.api_client.get_submission(self.submission_id)
+        subm = self.context.api_client.get_submission(self.problem_id, self.subm_id)
         self.context.submission = subm
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
         self.context.grader = judge_spec.grader

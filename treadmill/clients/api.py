@@ -20,20 +20,20 @@ class APIClient(object):
             data = data.schema().dump(data)
         return self._sess.post(self._config.API_ENDPOINT + path, data=data, **kwargs)
 
-    def get_submission(self, subm_id) -> Submission:
-        resp = self._get(f'/submissions/{subm_id}')
+    def get_submission(self, problem_id, subm_id) -> Submission:
+        resp = self._get(f'/problems/{problem_id}/submissions/{subm_id}')
         if resp.ok:
             return Submission.schema().load(resp.json())
         else:
             raise InternalApiError(resp.text)
 
     def set_testcase_judge_result(self, req_id, testset_id, testcase_id, result: TestCaseJudgeResult):
-        resp = self._post(f'/judge/{req_id}/{testset_id}/{testcase_id}/', result)
+        resp = self._post(f'/judge/{req_id}/testset/{testset_id}/testcase/{testcase_id}/', result)
         if not resp.ok:
             raise InternalApiError(resp.text)
 
     def set_testset_judge_result(self, req_id, testset_id, result: TestSetJudgeResult):
-        resp = self._post(f'/judge/{req_id}/{testset_id}/', result)
+        resp = self._post(f'/judge/{req_id}/testset/{testset_id}/', result)
         if not resp.ok:
             raise InternalApiError(resp.text)
 
