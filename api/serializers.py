@@ -172,7 +172,6 @@ class ProblemForJudgeSerializer(serializers.ModelSerializer):
 
 class SubmissionForJudgeSerializer(serializers.ModelSerializer):
     problem = ProblemForJudgeSerializer()
-    lang = serializers.CharField(source='lang_profile')
     src_file = serializers.CharField(source='submission_data')
 
     class Meta:
