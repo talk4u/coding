@@ -32,6 +32,7 @@ class ProblemAdmin(admin.ModelAdmin):
 
 class JudgeResultInline(admin.StackedInline):
     model = models.JudgeResult
+    extra = 2
 
 
 class SubmissionAdmin(admin.ModelAdmin):

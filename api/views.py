@@ -1,11 +1,13 @@
 from rest_framework import filters, permissions
+from rest_framework.decorators import detail_route
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 import api.models as models
 import api.serializers as serializers
-from api.permissions import IsOwnerOrSolverOrInstructor
-from api.utils import is_student
+from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
+from api.utils import is_student, is_instructor, update_dict_in_exist_keys
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -26,7 +28,7 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
 
 class RankViewSet(NestedViewSetMixin, ModelViewSet):
     queryset = models.JudgeResult.objects.filter(
-        status=models.JudgeStatus.passed.value,
+        status=models.JudgeStatus.PASSED.value,
         score=100
     )
     serializer_class = serializers.ProblemRankSerializer
@@ -52,3 +54,87 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
     serializer_class = serializers.SubmissionSerializer
     permission_classes = (permissions.IsAuthenticated,
                           IsOwnerOrSolverOrInstructor,)
+
+    @detail_route(methods=['get'], url_path='detail')
+    def get_submission_detail(self, request, pk, parent_lookup_problem):
+        submission = models.Submission.objects.get(pk=pk)
+        return Response(
+            serializers.SubmissionForJudgeSerializer(submission).data
+        )
+
+    @detail_route(methods=['post'], url_path='rejudge')
+    def request_submission_rejudge(self, request, pk, parent_lookup_problem):
+        # TODO : call JudgeRequest to Treadmill
+        pass
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,
+                          IsOwnerOrInstructor,)
+
+    def get_queryset(self):
+        user = self.request.user
+        results = models.JudgeResult.objects.all() if is_instructor(user) \
+            else models.JudgeResult.objects.filter(submission__user=user)
+        return results.order_by('-created_at')
+
+    def get_serializer_class(self):
+        if self.action is 'retrieve':
+            return serializers.JudgeResultDetailSerializer
+        else:
+            return serializers.JudgeResultSerializer
+
+
+class JudgeViewSet(ModelViewSet):
+    queryset = models.JudgeResult.objects.all()
+    serializer_class = serializers.JudgeResultSerializer
+
+    @detail_route(
+        methods=['patch'],
+        url_path='testset/(?P<testset_id>[0-9]+)'
+                 '/testcase/(?P<testcase_id>[0-9]+)'
+    )
+    def put_testcase_judge_result(self, request, pk, testset_id, testcase_id):
+        judge_result = models.JudgeResult.objects.get(pk=pk)
+
+        partial_data = request.data
+        updated_testsets = []
+        for testset in judge_result.detail:
+            updated_testcases = []
+            for testcase in testset['testcases']:
+                if int(testset['id']) == int(testset_id) and \
+                        int(testcase['id']) == int(testcase_id):
+                    testcase = update_dict_in_exist_keys(
+                        testcase, partial_data
+                    )
+                updated_testcases.append(testcase)
+            testset['testcases'] = updated_testcases
+            updated_testsets.append(testset)
+
+        judge_result.detail = updated_testsets
+        judge_result.save()
+
+        return Response(
+            serializers.JudgeResultDetailSerializer(judge_result).data
+        )
+
+    @detail_route(methods=['patch'], url_path='testset/(?P<testset_id>[0-9]+)')
+    def put_testset_judge_result(self, request, pk, testset_id):
+        judge_result = models.JudgeResult.objects.get(pk=pk)
+
+        partial_data = request.data
+        updated_testsets = []
+        for testset in judge_result.detail:
+            if int(testset['id']) == int(testset_id):
+                testset = update_dict_in_exist_keys(testset, partial_data)
+            updated_testsets.append(testset)
+
+        judge_result.detail = updated_testsets
+        judge_result.save()
+
+        return Response(
+            serializers.JudgeResultDetailSerializer(judge_result).data
+        )

@@ -104,3 +104,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+<<<<<<< HEAD
+=======
+
+# IntelliJ IDEA (including PyCharm)
+.idea
+>>>>>>> develop
