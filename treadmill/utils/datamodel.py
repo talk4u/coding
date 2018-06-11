@@ -25,7 +25,7 @@ _MARSHMALLOW_FIELDS = {
 
 def _is_primitive(type_):
     global _MARSHMALLOW_FIELDS
-    return issubclass(type_, tuple(_MARSHMALLOW_FIELDS.keys()))
+    return isinstance(type_, type) and issubclass(type_, tuple(_MARSHMALLOW_FIELDS.keys()))
 
 
 def _get_marshmallow_field(type_):
@@ -142,8 +142,20 @@ class DataModel(object, metaclass=DataModelMeta):
                 default_val = cls._field_defaults.get(field_name)
                 schema_fields[field_name] = cls._marsh_field(field_type, default=default_val)
             cls.__schema__ = type(cls.__name__ + 'Schema', (marshmallow.Schema,), schema_fields)
-            cls.__post_load = marshmallow.post_load(lambda self, **kwargs: cls(**kwargs))
         return cls.__schema__()
+
+    def dump(self):
+        data, error = self.schema().dump(self)
+        if error:
+            raise error
+        return data
+
+    @classmethod
+    def load(cls, data):
+        data, error = cls.schema().load(data)
+        if error:
+            raise error
+        return cls(**data)
 
     @classmethod
     def _marsh_field(cls, field_type, optional=False, default=None):

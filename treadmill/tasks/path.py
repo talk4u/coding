@@ -41,7 +41,7 @@ class AFP(ContextMixin):
         if self._s3fs_path:
             return os.path.join(
                 self.context.config.S3FS_ROOT,
-                self._s3fs_path
+                *self._s3fs_path
             )
 
     @property
@@ -55,6 +55,13 @@ class AFP(ContextMixin):
     @property
     def sandbox_path(self):
         return os.path.join(self.sandbox_root, *self._path)
+
+    def __repr__(self):
+        if self is ROOT:
+            return 'ROOT'
+        elif self is SANDBOX_ROOT:
+            return 'SANDBOX_ROOT'
+        return repr(self._path)
 
 
 ROOT = AFP(path=[], sandbox_visible=False)
@@ -85,9 +92,10 @@ def grader_bin_file():
 
 def test_input_file(testset, testcase):
     return AFP(path=['data', str(testset.id), os.path.basename(testcase.input_file)],
-               s3fs_path=testcase.input_file)
+               s3fs_path=[testcase.input_file])
 
 
 def test_output_file(testset, testcase):
     return AFP(path=['data', str(testset.id), os.path.basename(testcase.output_file)],
-               s3fs_path=testcase.output_file, sandbox_visible=False)
+               s3fs_path=[testcase.output_file],
+               sandbox_visible=False)

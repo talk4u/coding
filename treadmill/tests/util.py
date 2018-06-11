@@ -11,8 +11,9 @@ def assert_finished(gen, send=None):
 
 def assert_props(obj, expected_type, **expected_props):
     assert isinstance(obj, expected_type)
-    for prop_name, prop_val  in expected_props.items():
-        assert getattr(obj, prop_name) == prop_val
+    for prop_name, expected_prop_val in expected_props.items():
+        prop_val = getattr(obj, prop_name)
+        assert expected_prop_val == prop_val
 
 
 def run_generator_with_inputs(gen, inputs):

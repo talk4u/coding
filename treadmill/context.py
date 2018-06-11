@@ -7,13 +7,13 @@ import raven
 from treadmill.models import JudgeRequest, Submission, JudgeSpec, Grader, Lang
 from treadmill.clients import APIClient
 from treadmill.config import BaseConfig
+from treadmill.utils import ReprMixin
 
 
 global_context = threading.local()
 
 
 def get_current_context() -> 'JudgeContext':
-    global global_context
     return global_context.current
 
 
@@ -45,7 +45,7 @@ class JudgeContextFactory(object):
         )
 
 
-class JudgeContext(object):
+class JudgeContext(ReprMixin):
     request: JudgeRequest
     config: BaseConfig
     submission: Submission
@@ -96,8 +96,13 @@ class JudgeContext(object):
     def __getattr__(self, item):
         return None
 
-    def log_current_error(self):
+    def log_current_error(self, task_stack=None):
         if self.sentry_client:
-            self.sentry_client.captureException()
+            self.sentry_client.captureException(extra={
+                'task_stack': task_stack
+            })
         else:
             traceback.print_exc()
+            if task_stack:
+                for task in task_stack:
+                    print(task)

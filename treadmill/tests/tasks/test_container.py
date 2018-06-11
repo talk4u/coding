@@ -194,8 +194,7 @@ class TestSandboxEnviron(ContextMixin):
         container = Mock()
         util.assert_props(setup_steps.send(container), ops.ExecInDockerContainerOp,
                           container=container,
-                          cmd=['isolate', '--dir=/workspace/sandbox=/sandbox',
-                               '--init'])
+                          cmd=['isolate', '--init'])
 
         init_result = Mock(exit_code=0)
         util.assert_finished(setup_steps, send=init_result)
@@ -210,8 +209,7 @@ class TestSandboxEnviron(ContextMixin):
         container = Mock()
         util.assert_props(setup_steps.send(container), ops.ExecInDockerContainerOp,
                           container=container,
-                          cmd=['isolate', '--dir=/workspace/sandbox=/sandbox',
-                               '--init'])
+                          cmd=['isolate', '--init'])
 
         init_result = Mock(exit_code=1)
         with pytest.raises(IsolateInitFail):
@@ -271,7 +269,8 @@ class TestSandboxEnviron(ContextMixin):
         util.assert_props(exec_steps.send(None), ops.ExecInDockerContainerOp,
                           container=container,
                           cmd=['isolate',
-                               '--meta=/sandbox/bar/meta.txt',
+                               '--dir=/sandbox=/workspace/sandbox:rw',
+                               '--meta=/workspace/sandbox/bar/meta.txt',
                                '--mem=262144',
                                '--time=5.0',
                                '--wall-time=15.0',
@@ -304,7 +303,7 @@ class TestSandboxEnviron(ContextMixin):
         )
 
         util.assert_props(exec_steps.send(None), ops.ExecInDockerContainerOp,
-                          cmd=['java', '/workspace/sandbox/foo/Main.class',
+                          cmd=['/usr/bin/java', '/workspace/sandbox/foo/Main',
                                '<', '/workspace/sandbox/bar/input.txt',
                                '1>', '/workspace/sandbox/bar/output.txt'],
                           kwargs={'privileged': False})
@@ -327,7 +326,7 @@ class TestSandboxEnviron(ContextMixin):
         )
 
         util.assert_props(exec_steps.send(None), ops.ExecInDockerContainerOp,
-                          cmd=['python', '/workspace/sandbox/foo/main.py',
+                          cmd=['/usr/local/bin/python', '/workspace/sandbox/foo/main.py',
                                '<', '/workspace/sandbox/bar/input.txt',
                                '1>', '/workspace/sandbox/bar/output.txt'],
                           kwargs={'privileged': False})

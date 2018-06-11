@@ -2,7 +2,7 @@ import filecmp
 import os
 import shutil
 
-from treadmill.tasks.ops.base import Operation
+from treadmill.tasks.base import Task
 from treadmill.tasks.path import AFP
 
 
@@ -10,14 +10,14 @@ __all__ = [
     'CheckFileExistsOp',
     'CreateFileOp',
     'MakeDirectoryOp',
-    'CreateSymlinkOp',
+    'CopyFileOp',
     'ReadFileOp',
     'CompareFileOp',
     'RemoveDirectoryOp'
 ]
 
 
-class CheckFileExistsOp(Operation):
+class CheckFileExistsOp(Task):
     def __init__(self, afp: AFP):
         self.afp = afp
 
@@ -27,19 +27,22 @@ class CheckFileExistsOp(Operation):
         )
 
 
-class CreateFileOp(Operation):
+class CreateFileOp(Task):
     def __init__(self, afp: AFP, mode=None):
         self.afp = afp
         self.mode = mode
 
     def _run(self):
+        dest_dir = os.path.dirname(self.afp.host_path)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir, mode=0o755)
         open(self.afp.host_path, 'a').close()
         if self.mode:
             os.chmod(self.afp.host_path, self.mode)
 
 
-class MakeDirectoryOp(Operation):
-    def __init__(self, afp: AFP, mode=None, exist_ok=False):
+class MakeDirectoryOp(Task):
+    def __init__(self, afp: AFP, mode=0o755, exist_ok=False):
         self.afp = afp
         self.mode = mode
         self.exist_ok = exist_ok
@@ -48,16 +51,19 @@ class MakeDirectoryOp(Operation):
         os.makedirs(self.afp.host_path, mode=self.mode, exist_ok=self.exist_ok)
 
 
-class CreateSymlinkOp(Operation):
+class CopyFileOp(Task):
     def __init__(self, src_path: str, dest_path: str):
         self.src_path = src_path
         self.dest_path = dest_path
 
     def _run(self):
-        os.symlink(self.src_path, self.dest_path)
+        dest_dir = os.path.dirname(self.dest_path)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir, mode=0o755)
+        shutil.copyfile(self.src_path, self.dest_path)
 
 
-class ReadFileOp(Operation):
+class ReadFileOp(Task):
     def __init__(self, afp):
         self.afp = afp
 
@@ -66,7 +72,7 @@ class ReadFileOp(Operation):
             return f.read()
 
 
-class CompareFileOp(Operation):
+class CompareFileOp(Task):
     def __init__(self, target: AFP, expected: AFP):
         self.target = target
         self.expected = expected
@@ -79,7 +85,7 @@ class CompareFileOp(Operation):
         )
 
 
-class RemoveDirectoryOp(Operation):
+class RemoveDirectoryOp(Task):
     def __init__(self, target: AFP):
         self.target = target
 

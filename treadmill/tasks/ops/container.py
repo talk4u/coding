@@ -3,7 +3,7 @@ from typing import List
 import docker
 from docker.models.containers import Container
 
-from treadmill.tasks.ops.base import Operation
+from treadmill.tasks.base import Task
 from treadmill.tasks.path import ROOT
 
 
@@ -17,7 +17,7 @@ __all__ = [
 docker_client: docker.DockerClient = docker.from_env()
 
 
-class RunDockerContainerOp(Operation):
+class RunDockerContainerOp(Task):
     def __init__(self, container_tag, mount_workspace=True, privileged=False):
         self.container_tag = container_tag
         self.mount_workspace = mount_workspace
@@ -25,7 +25,7 @@ class RunDockerContainerOp(Operation):
 
     def _run(self):
         kwargs = dict(
-            commands='/bin/sh',  # Assume alpine based image (bash not installed)
+            command='/bin/sh',  # Assume alpine based image (bash not installed)
             stdin_open=True,     # Keep /bin/sh alive
             remove=True,         # Discard changes made in image after run
             detach=True          # Run in background
@@ -45,7 +45,7 @@ class RunDockerContainerOp(Operation):
         return docker_client.containers.run(self.container_tag, **kwargs)
 
 
-class ExecInDockerContainerOp(Operation):
+class ExecInDockerContainerOp(Task):
     def __init__(self, container: Container, cmd: List[str], **kwargs):
         self.container = container
         self.cmd = cmd
@@ -58,7 +58,7 @@ class ExecInDockerContainerOp(Operation):
         )
 
 
-class KillDockerContainerOp(Operation):
+class KillDockerContainerOp(Task):
     def __init__(self, container: Container):
         self.container = container
 

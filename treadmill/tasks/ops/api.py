@@ -1,5 +1,5 @@
 from treadmill.models import TestCaseJudgeResult, TestSetJudgeResult, TestCaseJudgeStatus, JudgeResult
-from treadmill.tasks.ops.base import Operation
+from treadmill.tasks.base import Task
 
 __all__ = [
     'FetchSubmissionOp',
@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 
-class FetchSubmissionOp(Operation):
+class FetchSubmissionOp(Task):
     def __init__(self, problem_id, subm_id):
         self.problem_id = problem_id
         self.subm_id = subm_id
@@ -15,14 +15,20 @@ class FetchSubmissionOp(Operation):
     def _run(self):
         subm = self.context.api_client.get_submission(self.problem_id, self.subm_id)
         self.context.submission = subm
+        self.context.subm_lang = subm.lang
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
+
+        # Some old contents uses kiB
+        if judge_spec.mem_limit_bytes <= 300_000:
+            judge_spec.mem_limit_bytes *= 1024
+
         self.context.grader = judge_spec.grader
         if judge_spec.grader:
             self.context.grader_lang = judge_spec.grader.lang
         if self.context.sentry_client:
             self.context.sentry_client.user_context({
-                'submission_id': subm.id,
-                'problem_id': subm.problem.id
+                'submission_id': self.subm_id,
+                'problem_id': self.problem_id
             })
 
 
@@ -31,7 +37,7 @@ def check_not_null(value):
     return value
 
 
-class UpdateJudgeResultOp(Operation):
+class UpdateJudgeResultOp(Task):
     def __init__(self, *,
                  testset_id=None,
                  testcase_id=None,
@@ -49,7 +55,7 @@ class UpdateJudgeResultOp(Operation):
         elif testcase_id is None:
             self.score = check_not_null(score)
         else:
-            self.testcase_status = testcase_status
+            self.testcase_status = check_not_null(testcase_status)
             self.max_rss = max_rss
             self.time = time
             self.error = error
@@ -63,7 +69,7 @@ class UpdateJudgeResultOp(Operation):
             self._update_testcase_result()
 
     def _update_testcase_result(self):
-        if self.status == TestCaseJudgeStatus.PASSED:
+        if self.testcase_status == TestCaseJudgeStatus.PASSED:
             self.context.total_time += self.time
             self.context.max_rss = max(self.max_rss, self.context.max_rss)
 

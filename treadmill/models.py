@@ -159,6 +159,7 @@ class IsolateExecMeta(object):
         props = {
             k: ':'.join(v)
             for line in data.split('\n')
+            if len(line) > 0
             for k, *v in line.split(':')
         }
         return IsolateExecMeta(**props)

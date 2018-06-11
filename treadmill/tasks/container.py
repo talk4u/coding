@@ -65,6 +65,12 @@ class BuilderEnviron(Environ):
 
 
 class SandboxEnviron(Environ):
+    # `dir_in` in container is seen as `dir_out` in isolated sandbox
+    _directory_opt = '--dir={dir_in}={dir_out}:rw'.format(
+        dir_in=path.SANDBOX_ROOT.sandbox_path,
+        dir_out=path.SANDBOX_ROOT.container_path
+    )
+
     def __init__(self, *, lang, isolated):
         self.lang = lang
         self.container = None
@@ -83,15 +89,7 @@ class SandboxEnviron(Environ):
         if self.isolated:
             init_result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
-                cmd=[
-                    'isolate',
-                    # `dir_in` in container is seen as `dir_out` in isolated sandbox
-                    '--dir={dir_in}={dir_out}'.format(
-                        dir_in=path.SANDBOX_ROOT.container_path,
-                        dir_out=path.SANDBOX_ROOT.sandbox_path
-                    ),
-                    '--init'
-                ]
+                cmd=['isolate', '--init']
             )
             if init_result.exit_code != 0:
                 raise IsolateInitFail(init_result.output)
@@ -104,9 +102,9 @@ class SandboxEnviron(Environ):
         if self.lang in [Lang.CPP, Lang.GO]:
             return [bin_file]
         elif self.lang == Lang.JAVA:
-            return ['java', bin_file]
+            return ['/usr/bin/java', os.path.splitext(bin_file)[0]]
         elif self.lang == Lang.PYTHON3:
-            return ['python', bin_file]
+            return ['/usr/local/bin/python', bin_file]
         else:
             raise UnsupportedLanguage(self.lang)
 
@@ -127,6 +125,7 @@ class SandboxEnviron(Environ):
             container=self.container,
             cmd=[
                 'isolate',
+                self._directory_opt,
                 f'--meta={meta_file}',
                 f'--mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
@@ -153,7 +152,7 @@ class SandboxEnviron(Environ):
                 stdin_file=stdin_file.sandbox_path,
                 stdout_file=stdout_file.sandbox_path,
                 stderr_file=stderr_file.sandbox_path,
-                meta_file=meta_file.sandbox_path,
+                meta_file=meta_file.container_path,  # Meta file resides in container
                 limits=limits
             )
         else:
@@ -235,9 +234,9 @@ class ExecuteTask(Task):
 
     def _run(self):
         exec_id = str(uuid.uuid4())
-        stdout_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.stdout'])
-        stderr_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.stderr'])
-        meta_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.meta'])
+        stdout_file = path.AFP(path=['logs', f'{exec_id}.stdout'])
+        stderr_file = path.AFP(path=['logs', f'{exec_id}.stderr'])
+        meta_file = path.AFP(path=['logs', f'{exec_id}.meta'])
         result = self.Result(
             exec_id=exec_id,
             stdout_file=stdout_file,
@@ -246,12 +245,12 @@ class ExecuteTask(Task):
 
         yield ops.CheckFileExistsOp(self.stdin_file)
         yield ops.CheckFileExistsOp(self.bin_file)
-        yield ops.CreateFileOp(stdout_file, mode=666)
-        yield ops.CreateFileOp(stderr_file, mode=666)
+        yield ops.CreateFileOp(stdout_file, mode=0o666)
+        yield ops.CreateFileOp(stderr_file, mode=0o666)
         if self.sandbox.isolated:
-            yield ops.CreateFileOp(meta_file, mode=666)
+            yield ops.CreateFileOp(meta_file, mode=0o666)
 
-        result.exit_code, result.output = yield from self.sandbox.exec(
+        exit_code, output = yield from self.sandbox.exec(
             bin_file=self.bin_file,
             stdin_file=self.stdin_file,
             stdout_file=stdout_file,
@@ -259,6 +258,8 @@ class ExecuteTask(Task):
             meta_file=meta_file,
             limits=self.sandbox.isolated and self.context.judge_spec
         )
+        result.exit_code = exit_code
+        result.output = output.decode('utf-8')
 
         if self.sandbox.isolated and not result.is_fatal:
             meta_str = yield ops.ReadFileOp(meta_file)

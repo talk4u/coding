@@ -63,4 +63,7 @@ class DevConfig(BaseConfig):
 
 
 class TestConfig(BaseConfig):
+    API_ENDPOINT = 'http://localhost:8000/api'
+    API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
+    REDIS_HOST = 'localhost'
     pass
