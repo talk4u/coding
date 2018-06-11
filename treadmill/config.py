@@ -4,10 +4,10 @@ from .models import Lang
 
 class BaseConfig(object):
     API_ENDPOINT: str = None
-    API_TOKEN: str = None
+    API_SECRET_KEY: str = None
 
     REDIS_HOST: str = None
-    REDIS_PORT: int = 6537
+    REDIS_PORT: int = 6379
 
     SENTRY_DSN: str = None
 
@@ -52,8 +52,8 @@ class BaseConfig(object):
 
 
 class DevConfig(BaseConfig):
-    API_ENDPOINT = 'http://localhost:8080/api'
-    API_TOKEN = ''
+    API_ENDPOINT = 'http://localhost:8000/api'
+    API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
     REDIS_HOST = 'localhost'
 
     def __init__(self, **kwargs):

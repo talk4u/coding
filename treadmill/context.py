@@ -86,6 +86,7 @@ class JudgeContext(object):
             self.sentry_client.user_context({
                 'request_id': self.request.id
             })
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         set_current_context(None)

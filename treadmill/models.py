@@ -71,6 +71,7 @@ class JudgeSpec(DataModel):
 
 
 class Problem(DataModel):
+    id: int
     judge_spec: JudgeSpec
 
 
@@ -131,8 +132,8 @@ class JudgeRequest(DataModel):
     id: int
     problem_id: int
     submission_id: int
-    rejudge: bool
-    created_at: datetime
+    rejudge: Optional[bool] = False
+    created_at: Optional[datetime]
 
 
 class IsolateExecMeta(object):
