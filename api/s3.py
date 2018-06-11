@@ -4,7 +4,7 @@ from boto.s3.prefix import Prefix
 from django.conf import settings
 
 
-def read_file(key):
+def read_file(key):  # pragma: no cover
     s3 = S3Connection(settings.AWS_ACCESS_KEY_ID,
                       settings.AWS_SECRET_ACCESS_KEY,
                       is_secure=True)
@@ -14,7 +14,7 @@ def read_file(key):
     return k.read()
 
 
-def generate_private_url(key):
+def generate_private_url(key):  # pragma: no cover
     s3 = S3Connection(settings.AWS_ACCESS_KEY_ID,
                       settings.AWS_SECRET_ACCESS_KEY,
                       is_secure=True)
@@ -25,12 +25,12 @@ def generate_private_url(key):
                            force_http=True)
 
 
-def get_submission_path(instance, filename):
+def get_submission_path(instance, filename):  # pragma: no cover
     extension = filename.split(".")[-1]
     return 'submission/{}/code.{}'.format(instance.id, extension)
 
 
-def get_files_in_directory(prefix):
+def get_files_in_directory(prefix):  # pragma: no cover
     prefix += '/'
     s3 = S3Connection(settings.AWS_ACCESS_KEY_ID,
                       settings.AWS_SECRET_ACCESS_KEY,

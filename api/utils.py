@@ -7,11 +7,11 @@ def is_student(user):
     return user.groups.filter(name='student').exists()
 
 
-def is_instructor(user):
+def is_instructor(user):  # pragma: no cover
     return user.groups.filter(name='instructor').exists()
 
 
-def is_solver(problem, user):
+def is_solver(problem, user):  # pragma: no cover
     return get_latest_judge_result_queryset(
         models.JudgeResult.objects.filter(
             status=models.JudgeStatus.PASSED.value,
@@ -29,7 +29,7 @@ def get_latest_judge_result_queryset(qs):
     return qs.filter(created_at__in=latest_dates.values('latest_created_at'))
 
 
-def update_dict_in_exist_keys(dict1, dict2):
+def update_dict_in_exist_keys(dict1, dict2):  # pragma: no cover
     for key, value in dict1.items():
         if key in dict2:
             dict1[key] = dict2[key]

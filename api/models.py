@@ -174,7 +174,7 @@ class Submission(BaseModel):
             self.problem.name, self.user.name, self.lang
         )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # pragma: no cover
         if self.pk is None:
             temp_data = self.submission_data
             self.submission_data = None
@@ -236,7 +236,7 @@ class JudgeResult(BaseModel):
         return '%s 에 대한 채점결과 (%s)점' % (self.submission.__str__(), self.score)
 
     @staticmethod
-    def create_initial_judge_result(submission):
+    def create_initial_judge_result(submission):  # pragma: no cover
         judge_spec = submission.problem.judge_spec
         set_configuration = dict(judge_spec.config)
 

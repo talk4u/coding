@@ -8,7 +8,7 @@ class IsOwnerOrSolverOrInstructor(permissions.BasePermission):
     Custom permission to only allow owners of an object to edit it.
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # pragma: no cover
         # Read permissions are allowed to any request,
         # so we'll always allow GET, HEAD or OPTIONS requests.
 
@@ -26,7 +26,7 @@ class IsOwnerOrInstructor(permissions.BasePermission):
     Custom permission to only allow owners of an object to edit it.
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # pragma: no cover
         # Read permissions are allowed to any request,
         # so we'll always allow GET, HEAD or OPTIONS requests.
 
