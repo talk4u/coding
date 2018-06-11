@@ -105,7 +105,9 @@ class JudgeViewSet(ModelViewSet):
         url_path='testset/(?P<testset_id>[0-9]+)'
                  '/testcase/(?P<testcase_id>[0-9]+)'
     )
-    def put_testcase_judge_result(self, request, pk, testset_id, testcase_id):  # pragma: no cover
+    def put_testcase_judge_result(
+            self, request, pk, testset_id, testcase_id
+    ):  # pragma: no cover
         judge_result = models.JudgeResult.objects.get(pk=pk)
 
         partial_data = request.data
@@ -130,7 +132,9 @@ class JudgeViewSet(ModelViewSet):
         )
 
     @detail_route(methods=['patch'], url_path='testset/(?P<testset_id>[0-9]+)')
-    def put_testset_judge_result(self, request, pk, testset_id):  # pragma: no cover
+    def put_testset_judge_result(
+            self, request, pk, testset_id
+    ):  # pragma: no cover
         judge_result = models.JudgeResult.objects.get(pk=pk)
 
         partial_data = request.data
