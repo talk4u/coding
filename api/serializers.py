@@ -110,7 +110,7 @@ class ProblemSerializer(serializers.ModelSerializer):
         model = models.Problem
         fields = '__all__'
 
-    def get_max_score(self, obj):
+    def get_max_score(self, obj):  # pragma: no cover
         qs = models.JudgeResult.objects.filter(
             submission__problem=obj,
             submission__user=self.context['request'].user
@@ -162,7 +162,7 @@ class JudgeSpecSerializer(serializers.ModelSerializer):
         }
 
     @staticmethod
-    def get_testsets(obj):
+    def get_testsets(obj):  # pragma: no cover
         set_configuration = dict(obj.config)
 
         num_sets = int(set_configuration['num_sets'])
