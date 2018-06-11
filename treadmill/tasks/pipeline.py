@@ -1,7 +1,7 @@
 from treadmill.models import JudgeStatus
 from treadmill.signal import SubmissionCompileError, ServerFault, InternalApiError
 from .workspace import WorkspaceEnviron
-from .base import Task
+from .base import Task, get_task_stack
 from .stage import CompileStage, JudgeStage
 from . import ops
 
@@ -26,7 +26,7 @@ class JudgePipeline(Task):
             self.context.log_current_error()
             raise
         except (ServerFault, Exception) as e:
-            self.context.log_current_error()
+            self.context.log_current_error(task_stack=get_task_stack())
             yield ops.UpdateJudgeResultOp(
                 status=JudgeStatus.INTERNAL_ERROR,
                 error=str(e)

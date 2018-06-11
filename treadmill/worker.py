@@ -1,7 +1,9 @@
+import logging
+
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 
-from treadmill.config import BaseConfig
+from treadmill.config import BaseConfig, DevConfig
 from treadmill.context import JudgeContextFactory
 from treadmill.models import JudgeRequest
 from treadmill.signal import RetryableError
@@ -11,6 +13,9 @@ from treadmill.utils import cached
 __all__ = [
     'WorkerFactory'
 ]
+
+
+_logger = logging.getLogger('treadmill.worker')
 
 
 # Lower is faster
@@ -30,13 +35,15 @@ class WorkerFactory(object):
         self.context_factory = JudgeContextFactory(config)
 
     def _judge(self, request_data):
-        request = JudgeRequest.schema().load(request_data)
+        request = JudgeRequest(**request_data)
+        _logger.debug(request)
         with self.context_factory.new(request):
             try:
                 JudgePipeline().run()
             except RetryableError:
                 raise
-            except Exception:
+            except Exception as e:
+                _logger.exception(e)
                 self.retry_worker().send(request_data)
 
     def _retry(self, request):
@@ -74,3 +81,19 @@ class WorkerFactory(object):
             priority=LOW_PRIO,
             options={}
         )
+
+
+if __name__ == '__main__':
+    treadmill_logger = logging.getLogger('treadmill')
+    treadmill_logger.setLevel(logging.DEBUG)
+    treadmill_logger.addHandler(logging.StreamHandler())
+    factory = WorkerFactory(DevConfig(
+        HOST_WORKSPACE_ROOT='/Users/jjong/Temp/treadmill-workspace',
+        S3FS_ROOT='/Users/jjong/mnt/talk4u-data'
+    ))
+    request = JudgeRequest(
+        id=1,
+        problem_id=1,
+        submission_id=3
+    ).dump()
+    factory.judge_worker()(request)
