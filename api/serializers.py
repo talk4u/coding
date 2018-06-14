@@ -210,11 +210,14 @@ class SubmissionForJudgeSerializer(serializers.ModelSerializer):
 
 
 class JudgeResultSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='submission.user.username')
+    name = serializers.CharField(source='submission.user.name')
+
     class Meta:
         model = models.JudgeResult
         fields = ('id', 'submission_id', 'status',
                   'memory_used_bytes', 'time_elapsed_seconds', 'code_size',
-                  'score', 'created_at')
+                  'score', 'created_at', 'user_name', 'name')
 
 
 class JudgeResultDetailSerializer(serializers.ModelSerializer):
