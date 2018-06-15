@@ -55,17 +55,21 @@ def run_generator_function_or_callable(f):
 
 
 _global_task = threading.local()
-_global_task.stack = []
 
 
 @contextlib.contextmanager
 def set_current_task(task):
-    _global_task.stack.append(task)
+    global _global_task
+    if hasattr(_global_task, 'stack'):
+        stack = _global_task.stack
+    else:
+        _global_task.stack = stack = []
+    stack.append(task)
     _logger.debug_with_indent(task)
     try:
         yield task
     finally:
-        _global_task.stack.pop()
+        stack.pop()
 
 
 def get_task_stack():
@@ -83,11 +87,14 @@ class Task(ContextMixin, ReprMixin):
 
 
 _global_environs = threading.local()
-_global_environs.stack = []
 
 
 def push_environ(env):
-    _global_environs.stack.append(env)
+    if hasattr(_global_environs, 'stack'):
+        environ_stack = _global_environs.stack
+    else:
+        _global_environs.stack = environ_stack = []
+    environ_stack.append(env)
     _global_task.stack.append(env)
     _logger.debug_with_indent(env)
 

@@ -53,7 +53,7 @@ class WorkerFactory(object):
         with self.context_factory.new(request):
             try:
                 EnqueuePipeline().run()
-                self.judge_worker().send(request)
+                self.judge_worker().send(request_data)
             except Exception as e:
                 _logger.exception(e)
                 raise
@@ -105,7 +105,7 @@ def main():
         problem_id=1,
         submission_id=3
     ).dump()
-    factory.judge_worker()(request)
+    factory.judge_worker().send(request)
 
 
 if __name__ == '__main__':
