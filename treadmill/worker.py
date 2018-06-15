@@ -7,7 +7,7 @@ from treadmill.config import BaseConfig, DevConfig
 from treadmill.context import JudgeContextFactory
 from treadmill.models import JudgeRequest
 from treadmill.signal import RetryableError
-from treadmill.tasks import JudgePipeline
+from treadmill.tasks import JudgePipeline, EnqueuePipeline
 from treadmill.utils import cached
 
 __all__ = [
@@ -36,7 +36,7 @@ class WorkerFactory(object):
 
     def _judge(self, request_data):
         request = JudgeRequest(**request_data)
-        _logger.debug(request)
+        _logger.info('Received ' + str(request))
         with self.context_factory.new(request):
             try:
                 JudgePipeline().run()
@@ -46,8 +46,16 @@ class WorkerFactory(object):
                 _logger.exception(e)
                 self.retry_worker().send(request_data)
 
-    def _retry(self, request):
-        self.judge_worker().send(request)
+    def _retry(self, request_data):
+        request = JudgeRequest(**request_data)
+        _logger.info('Received ' + str(request))
+        with self.context_factory.new(request):
+            try:
+                EnqueuePipeline().run()
+                self.judge_worker().send(request)
+            except Exception as e:
+                _logger.exception(e)
+                raise
 
     @cached
     def judge_worker(self):
@@ -55,7 +63,7 @@ class WorkerFactory(object):
             self._judge,
             broker=self.broker,
             actor_name='judge_worker',
-            queue_name='normal',
+            queue_name=NORMAL_QUEUE,
             priority=NORMAL_PRIO,
             options={}
         )
@@ -66,7 +74,7 @@ class WorkerFactory(object):
             self._retry,
             broker=self.broker,
             actor_name='retry_worker',
-            queue_name='failed',
+            queue_name=RETRY_QUEUE,
             priority=LOW_PRIO,
             options={}
         )
@@ -77,13 +85,13 @@ class WorkerFactory(object):
             self._judge,
             broker=self.broker,
             actor_name='rejudge_worker',
-            queue_name='rejudge',
+            queue_name=REJUDGE_QUEUE,
             priority=LOW_PRIO,
             options={}
         )
 
 
-if __name__ == '__main__':
+def main():
     treadmill_logger = logging.getLogger('treadmill')
     treadmill_logger.setLevel(logging.DEBUG)
     treadmill_logger.addHandler(logging.StreamHandler())
@@ -97,3 +105,7 @@ if __name__ == '__main__':
         submission_id=3
     ).dump()
     factory.judge_worker()(request)
+
+
+if __name__ == '__main__':
+    main()
