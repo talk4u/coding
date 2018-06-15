@@ -3,7 +3,7 @@ import importlib
 
 from treadmill.worker import WorkerFactory
 
-config_name = os.environ.get('TM_CONFIG')
+config_name = os.environ.get('TREADMILL_CONFIG')
 if config_name is None:
     raise ValueError('Set TREADMILL_CONFIG environment variable')
 

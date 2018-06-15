@@ -30,7 +30,7 @@ class BaseConfig(object):
         if key in kwargs:
             setattr(self, key, kwargs.pop(key))
         else:
-            setattr(self, key, os.environ['TM_' + key])
+            setattr(self, key, os.environ['TREADMILL_' + key])
 
     @classmethod
     def builder_container_tag(cls, lang):

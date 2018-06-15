@@ -43,7 +43,7 @@ class UpdateJudgeResultOp(Task):
                  testcase_id=None,
                  status=None,
                  testcase_status=None,
-                 max_rss=None,
+                 mem=None,
                  time=None,
                  score=None,
                  error=None):
@@ -56,7 +56,7 @@ class UpdateJudgeResultOp(Task):
             self.score = check_not_null(score)
         else:
             self.testcase_status = check_not_null(testcase_status)
-            self.max_rss = max_rss
+            self.mem = mem
             self.time = time
             self.error = error
 
@@ -71,7 +71,7 @@ class UpdateJudgeResultOp(Task):
     def _update_testcase_result(self):
         if self.testcase_status == TestCaseJudgeStatus.PASSED:
             self.context.total_time += self.time
-            self.context.max_rss = max(self.max_rss, self.context.max_rss)
+            self.context.max_mem = max(self.mem, self.context.max_mem)
 
         self.context.api_client.set_testcase_judge_result(
             self.context.request.id,
@@ -79,7 +79,7 @@ class UpdateJudgeResultOp(Task):
             self.testcase_id,
             TestCaseJudgeResult(
                 status=self.testcase_status,
-                memory_used_bytes=self.max_rss,
+                memory_used_bytes=self.mem,
                 time_elapsed_seconds=self.time,
                 error=self.error
             )
@@ -102,7 +102,7 @@ class UpdateJudgeResultOp(Task):
             JudgeResult(
                 status=self.status,
                 total_score=self.context.total_score,
-                memory_used_bytes=self.context.max_rss,
+                memory_used_bytes=self.context.max_mem,
                 time_elapsed_seconds=self.context.total_time
             )
         )

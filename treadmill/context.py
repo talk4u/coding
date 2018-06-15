@@ -56,7 +56,7 @@ class JudgeContext(ReprMixin):
 
     total_score: int = 0
     total_time: float = 0.0
-    max_rss: int = 0
+    max_mem: int = 0
 
     docker_client: docker.DockerClient
     api_client: APIClient
@@ -73,7 +73,7 @@ class JudgeContext(ReprMixin):
 
         self.total_score = 0
         self.total_time = 0
-        self.max_rss = 0
+        self.max_mem = 0
 
         self.docker_client = docker_client
         self.api_client = api_client

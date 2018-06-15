@@ -32,6 +32,7 @@ class WorkerFactory(object):
     def __init__(self, config: BaseConfig):
         self.config = config
         self.broker = RedisBroker(host=config.REDIS_HOST, port=config.REDIS_PORT)
+        dramatiq.set_broker(self.broker)
         self.context_factory = JudgeContextFactory(config)
 
     def _judge(self, request_data):

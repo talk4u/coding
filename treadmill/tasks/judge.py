@@ -31,7 +31,7 @@ class JudgeTask(Task):
                     testset_id=testset.id,
                     testcase_id=testcase.id,
                     testcase_status=TestCaseJudgeStatus.PASSED,
-                    max_rss=meta.max_rss,
+                    mem=meta.cg_mem,
                     time=meta.time
                 )
                 continue

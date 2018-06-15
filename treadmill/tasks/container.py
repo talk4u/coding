@@ -198,8 +198,8 @@ class ExecuteTask(Task):
 
         @property
         def out_of_memory(self):
-            return (self.meta.exitsig == 11 and  # SIGSEGV
-                    self.meta.max_rss > self.context.judge_spec.mem_limit_bytes)
+            return (self.meta.exit_code == 1 and
+                    self.meta.cg_mem > self.context.judge_spec.mem_limit_bytes)
 
         @property
         def stdout(self):
