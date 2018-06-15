@@ -41,27 +41,11 @@ class BuilderEnviron(Environ):
         src_file = src_file.container_path
         out_file = out_file.container_path
 
-        if self.lang == Lang.CPP:
-            result = yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['g++', '-o', out_file, src_file]
-            )
-            return result
-        elif self.lang == Lang.JAVA:
-            dest_dir = os.path.dirname(out_file)
-            result = yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['javac', '-d', dest_dir, src_file]
-            )
-            return result
-        elif self.lang == Lang.GO:
-            result = yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['go', 'build', '-o', out_file, src_file]
-            )
-            return result
-        else:
-            raise UnsupportedLanguage(self.lang)
+        result = yield ops.ExecInDockerContainerOp(
+            container=self.container,
+            cmd=self.lang.profile.get_compile_cmd(src_file, out_file)
+        )
+        return result
 
 
 class SandboxEnviron(Environ):
@@ -89,7 +73,7 @@ class SandboxEnviron(Environ):
         if self.isolated:
             init_result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
-                cmd=['isolate', '--init']
+                cmd=['isolate', '--cg', '--init']
             )
             if init_result.exit_code != 0:
                 raise IsolateInitFail(init_result.output)
@@ -98,20 +82,11 @@ class SandboxEnviron(Environ):
         if self.container:
             yield ops.KillDockerContainerOp(self.container)
 
-    def _get_run_cmd(self, bin_file: str):
-        if self.lang in [Lang.CPP, Lang.GO]:
-            return [bin_file]
-        elif self.lang == Lang.JAVA:
-            return ['/usr/bin/java', os.path.splitext(bin_file)[0]]
-        elif self.lang == Lang.PYTHON3:
-            return ['/usr/local/bin/python', bin_file]
-        else:
-            raise UnsupportedLanguage(self.lang)
-
     def _exec_normal(self, *, bin_file, stdin_file, stdout_file):
         result = yield ops.ExecInDockerContainerOp(
             self.container,
-            cmd=self._get_run_cmd(bin_file) + [
+            cmd=[
+                *self.lang.profile.get_exec_cmd(bin_file),
                 '<', stdin_file,
                 '1>', stdout_file
             ],
@@ -121,24 +96,31 @@ class SandboxEnviron(Environ):
 
     def _exec_in_isolate(self, *, bin_file, stdin_file, stdout_file, stderr_file,
                          meta_file, limits):
+        pid_limits = limits.pid_limits
+        if self.lang == Lang.JAVA:
+            # For not-yet-known reason JVM requires at least 11 processes to run
+            pid_limits = 16
+
         result = yield ops.ExecInDockerContainerOp(
             container=self.container,
             cmd=[
                 'isolate',
                 self._directory_opt,
+                '--cg',
                 f'--meta={meta_file}',
                 f'--mem={limits.mem_limit_bytes // 1024}',
+                f'--cg-mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',
                 f'--extra-time=1.0',
                 f'--fsize={limits.file_size_limit_kilos}',
-                f'--processes={limits.pid_limits}',
+                f'--processes={pid_limits}',
                 f'--stdin={stdin_file}',
                 f'--stdout={stdout_file}',
                 f'--stderr={stderr_file}',
                 '--run',
                 '--',
-                *self._get_run_cmd(bin_file)
+                *self.lang.profile.get_exec_cmd(bin_file)
             ],
             privileged=True
         )

@@ -4,6 +4,8 @@ import logging
 import threading
 from abc import abstractmethod
 
+from dramatiq.middleware import TimeLimitExceeded
+
 from treadmill.context import ContextMixin
 from treadmill.utils import ReprMixin
 from .logger import IndentLogger
@@ -28,14 +30,26 @@ def runnable(f):
 
 def run_generator_function_or_callable(f):
     if inspect.isgeneratorfunction(f):
-        gen = f()
+        task_gen = f()
         subtask_result = None
+        subtask_error = False
         while True:
             try:
-                subtask = gen.send(subtask_result)
-                subtask_result = subtask.run() if runnable(subtask) else None
+                subtask = task_gen.send(subtask_result)
+                if runnable(subtask):
+                    try:
+                        subtask_result = subtask.run()
+                    except Exception as e:
+                        subtask_error = True
+                        task_gen.throw(e)
+                else:
+                    subtask_result = None
             except StopIteration as end:
                 return end.value
+            except (TimeLimitExceeded, KeyboardInterrupt) as e:
+                if not subtask_error:
+                    task_gen.throw(e)
+                raise
     elif callable(f):
         return f()
 
@@ -48,8 +62,10 @@ _global_task.stack = []
 def set_current_task(task):
     _global_task.stack.append(task)
     _logger.debug_with_indent(task)
-    yield task
-    _global_task.stack.pop()
+    try:
+        yield task
+    finally:
+        _global_task.stack.pop()
 
 
 def get_task_stack():
@@ -92,7 +108,7 @@ class Environ(ContextMixin, ReprMixin):
         try:
             run_generator_function_or_callable(self._setup)
             return self
-        except Exception:
+        except BaseException:
             pop_environ()
             run_generator_function_or_callable(self._teardown)
             raise

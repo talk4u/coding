@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from treadmill.utils import DataModel
+from treadmill.langs import LangProfile
 
 
 S3Key = str
@@ -23,19 +24,6 @@ class TestSet(DataModel):
     updated_at: datetime
 
 
-class LangProfile(enum.Enum):
-    CPP = ('g++ 6.4.0', True, 'main.cpp', 'main')
-    JAVA = ('OpenJDK 8u151', True, 'Main.java', 'Main.class')
-    PYTHON3 = ('Python 3.6.5', False, 'main.py', 'main.py')
-    GO = ('Go 1.10.1', True, 'main.go', 'main')
-
-    def __init__(self, version, need_compile, src_file_name, bin_file_name):
-        self.version = version
-        self.need_compile = need_compile
-        self.src_file_name = src_file_name
-        self.bin_file_name = bin_file_name
-
-
 class Lang(enum.Enum):
     CPP = 'c++'
     JAVA = 'java'
@@ -45,11 +33,7 @@ class Lang(enum.Enum):
 
     @property
     def profile(self) -> LangProfile:
-        return getattr(LangProfile, self.name)
-
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
+        return LangProfile.get_profile(self)
 
 
 class Grader(DataModel):
@@ -91,10 +75,6 @@ class JudgeStatus(enum.Enum):
     FAILED = 'FAIL'
     INTERNAL_ERROR = 'ERR'
 
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
-
 
 class TestCaseJudgeStatus(enum.Enum):
     NOT_JUDGED = 'NA'
@@ -103,10 +83,6 @@ class TestCaseJudgeStatus(enum.Enum):
     MEMORY_LIMIT_EXCEEDED = 'MLE'
     TIME_LIMIT_EXCEEDED = 'TLE'
     PASSED = 'PASS'
-
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
 
 
 class TestCaseJudgeResult(DataModel):

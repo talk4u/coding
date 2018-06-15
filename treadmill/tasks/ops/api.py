@@ -19,7 +19,7 @@ class FetchSubmissionOp(Task):
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
 
         # Some old contents uses kiB
-        if judge_spec.mem_limit_bytes <= 300_000:
+        if judge_spec.mem_limit_bytes <= 1_048_576:  # 1MiB
             judge_spec.mem_limit_bytes *= 1024
 
         self.context.grader = judge_spec.grader
