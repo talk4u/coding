@@ -13,10 +13,13 @@ class AFP(ContextMixin):
     location which can be evaluated to raw path any time.
     """
     container_root = '/workspace'
-    sandbox_root = '/sandbox'
-    sandbox_prefix = os.path.relpath(sandbox_root, '/')
+    sandbox_root = '/'
 
-    def __init__(self, *, path: List[str], sandbox_visible=True, s3fs_path=None):
+    def __init__(self, *,
+                 path: List[str],
+                 sandbox_visible=True,
+                 sandbox_dirname='sandbox',
+                 s3fs_path=None):
         """
         Args:
             path: List of path segments
@@ -25,6 +28,7 @@ class AFP(ContextMixin):
 
         self._path = path
         self._sandbox_visible = sandbox_visible
+        self._sandbox_dirname = sandbox_dirname if sandbox_visible else ''
         self._s3fs_path = s3fs_path
 
     @property
@@ -32,7 +36,7 @@ class AFP(ContextMixin):
         return os.path.join(
             self.context.config.HOST_WORKSPACE_ROOT,
             str(self.context.request.id),
-            self.sandbox_prefix if self._sandbox_visible else '',
+            self._sandbox_dirname,
             *self._path
         )
 
@@ -48,13 +52,14 @@ class AFP(ContextMixin):
     def container_path(self):
         return os.path.join(
             self.container_root,
-            self.sandbox_prefix if self._sandbox_visible else '',
+            self._sandbox_dirname,
             *self._path
         )
 
     @property
     def sandbox_path(self):
-        return os.path.join(self.sandbox_root, *self._path)
+        if self._sandbox_dirname:
+            return os.path.join('/', self._sandbox_dirname, *self._path)
 
     def __repr__(self):
         if self is ROOT:
@@ -66,6 +71,7 @@ class AFP(ContextMixin):
 
 ROOT = AFP(path=[], sandbox_visible=False)
 SANDBOX_ROOT = AFP(path=[], sandbox_visible=True)
+ETC = AFP(path=[], sandbox_dirname='etc')
 
 
 def subm_src_file():

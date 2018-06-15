@@ -20,7 +20,7 @@ class BaseConfig(object):
 
     NATIVE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-native:v0.1.0'
     JRE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-jre8:v0.1.0'
-    PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.0'
+    PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.1'
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():

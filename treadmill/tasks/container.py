@@ -50,9 +50,13 @@ class BuilderEnviron(Environ):
 
 class SandboxEnviron(Environ):
     # `dir_in` in container is seen as `dir_out` in isolated sandbox
-    _directory_opt = '--dir={dir_in}={dir_out}:rw'.format(
+    _sandbox_mapping_opt = '--dir={dir_in}={dir_out}:rw'.format(
         dir_in=path.SANDBOX_ROOT.sandbox_path,
         dir_out=path.SANDBOX_ROOT.container_path
+    )
+    _etc_mapping_opt = '--dir={dir_in}={dir_out}:rw'.format(
+        dir_in=path.ETC.sandbox_path,
+        dir_out=path.ETC.container_path
     )
 
     def __init__(self, *, lang, isolated):
@@ -101,14 +105,17 @@ class SandboxEnviron(Environ):
             # For not-yet-known reason JVM requires at least 11 processes to run
             pid_limits = 16
 
+        mapping_opts = [self._sandbox_mapping_opt]
+        if self.lang == Lang.PYTHON3:
+            mapping_opts += [self._etc_mapping_opt]  # Python requires /etc/passwd file
+
         result = yield ops.ExecInDockerContainerOp(
             container=self.container,
             cmd=[
                 'isolate',
-                self._directory_opt,
+                *mapping_opts,
                 '--cg',
                 f'--meta={meta_file}',
-                f'--mem={limits.mem_limit_bytes // 1024}',
                 f'--cg-mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',

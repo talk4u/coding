@@ -16,3 +16,5 @@ RUN set -eux \
 
 RUN set -eux \
     && mkdir /workspace
+
+COPY sandbox-py36/passwd /workspace/etc/passwd
