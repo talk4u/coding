@@ -1,14 +1,21 @@
 from datetime import datetime
+
 import dramatiq
+from django.conf import settings
+from dramatiq.brokers.redis import RedisBroker
 
 
-@dramatiq.actor(queue_name='treadmill.normal')
+broker = RedisBroker(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+dramatiq.set_broker(broker)
+
+
+@dramatiq.actor(queue_name='treadmill_normal')
 def judge_worker(request):
     """ Dummy worker """
     pass
 
 
-@dramatiq.actor(queue_name='treadmill.rejudge')
+@dramatiq.actor(queue_name='treadmill_rejudge')
 def rejudge_worker(request):
     """ Dummy worker """
     pass

@@ -65,9 +65,13 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
 
     @detail_route(methods=['post'], url_path='rejudge')
     def request_submission_rejudge(self, request, pk, parent_lookup_problem):
-        # TODO : call JudgeRequest to Treadmill
-        # rejudge(request_id=?, problem_id=?, submission_id=?)
-        pass
+        # TODO: Create new JudgeRequest (not reuse old JudgeResult)
+        judge_result = models.JudgeResult.objects.get(submission_id=pk)
+        rejudge(
+            request_id=judge_result.id,
+            submission_id=pk,
+            problem_id=parent_lookup_problem
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

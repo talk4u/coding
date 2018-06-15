@@ -23,9 +23,9 @@ HIGH_PRIO = 0
 NORMAL_PRIO = 50
 LOW_PRIO = 100
 
-NORMAL_QUEUE = 'treadmill.normal'
-REJUDGE_QUEUE = 'treadmill.rejudge'
-RETRY_QUEUE = 'treadmill.retry'
+NORMAL_QUEUE = 'treadmill_normal'
+REJUDGE_QUEUE = 'treadmill_rejudge'
+RETRY_QUEUE = 'treadmill_retry'
 
 
 class WorkerFactory(object):
