@@ -8,6 +8,7 @@ import api.models as models
 import api.serializers as serializers
 from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
 from api.utils import is_student, is_instructor, update_dict_in_exist_keys
+from api.judge import judge, rejudge
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -65,6 +66,7 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
     @detail_route(methods=['post'], url_path='rejudge')
     def request_submission_rejudge(self, request, pk, parent_lookup_problem):
         # TODO : call JudgeRequest to Treadmill
+        # rejudge(request_id=?, problem_id=?, submission_id=?)
         pass
 
     def perform_create(self, serializer):

@@ -108,7 +108,6 @@ class JudgeRequest(DataModel):
     id: int
     problem_id: int
     submission_id: int
-    rejudge: Optional[bool] = False
     created_at: Optional[datetime]
 
 
