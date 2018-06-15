@@ -1,4 +1,3 @@
-from collections import defaultdict
 from enum import Enum
 
 from django.contrib.auth.models import User
@@ -118,10 +117,10 @@ class JudgeSpec(BaseModel):
     type = models.CharField(max_length=255, choices=JudgeSpecType.choices())
     config = JSONField()
     mem_limit_bytes = models.IntegerField()
-    time_limit_seconds = models.IntegerField()
+    time_limit_seconds = models.FloatField()
 
-    grader = models.URLField()
-    test_data = models.URLField()
+    grader = models.CharField(max_length=255)
+    test_data = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'judge_spec'
@@ -175,7 +174,7 @@ class Submission(BaseModel):
             self.problem.name, self.user.name, self.lang
         )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # pragma: no cover
         if self.pk is None:
             temp_data = self.submission_data
             self.submission_data = None
@@ -220,7 +219,7 @@ class TestCaseJudgeStatus(Enum):
 
 
 class JudgeResult(BaseModel):
-    submission = models.OneToOneField(Submission, on_delete=models.CASCADE)
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE)
     status = models.CharField(max_length=255, choices=JudgeStatus.choices())
     memory_used_bytes = models.IntegerField()
     time_elapsed_seconds = models.FloatField()
@@ -237,7 +236,7 @@ class JudgeResult(BaseModel):
         return '%s 에 대한 채점결과 (%s)점' % (self.submission.__str__(), self.score)
 
     @staticmethod
-    def create_initial_judge_result(submission):
+    def create_initial_judge_result(submission):  # pragma: no cover
         judge_spec = submission.problem.judge_spec
         set_configuration = dict(judge_spec.config)
 
@@ -264,7 +263,7 @@ class JudgeResult(BaseModel):
             s += case_counts[i]
 
         return JudgeResult.objects.create(
-            submission=submission, status=JudgeStatus.enqueued.value,
+            submission=submission, status=JudgeStatus.ENQUEUED.value,
             detail=test_sets, score=0,
             memory_used_bytes=0,
             time_elapsed_seconds=0,

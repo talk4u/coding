@@ -1,3 +1,4 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
@@ -7,7 +8,8 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 import api.models as models
 import api.serializers as serializers
 from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
-from api.utils import is_student, is_instructor, update_dict_in_exist_keys
+from api.utils import is_student, is_instructor, update_dict_in_exist_keys, \
+    get_latest_judge_result_queryset
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -27,9 +29,11 @@ class GymViewSet(NestedViewSetMixin, ModelViewSet):
 
 
 class RankViewSet(NestedViewSetMixin, ModelViewSet):
-    queryset = models.JudgeResult.objects.filter(
-        status=models.JudgeStatus.PASSED.value,
-        score=100
+    queryset = get_latest_judge_result_queryset(
+        models.JudgeResult.objects.filter(
+            status=models.JudgeStatus.PASSED.value,
+            score=100
+        )
     )
     serializer_class = serializers.ProblemRankSerializer
     filter_backends = (filters.OrderingFilter,)
@@ -75,13 +79,17 @@ class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,
                           IsOwnerOrInstructor,)
 
-    def get_queryset(self):
+    filter_backends = (DjangoFilterBackend, )
+    filter_fields = ('status',)
+
+    def get_queryset(self):  # pragma: no cover
         user = self.request.user
-        results = models.JudgeResult.objects.all() if is_instructor(user) \
+        qs = models.JudgeResult.objects.all() if is_instructor(user) \
             else models.JudgeResult.objects.filter(submission__user=user)
+        results = get_latest_judge_result_queryset(qs)
         return results.order_by('-created_at')
 
-    def get_serializer_class(self):
+    def get_serializer_class(self):  # pragma: no cover
         if self.action is 'retrieve':
             return serializers.JudgeResultDetailSerializer
         else:
@@ -97,7 +105,9 @@ class JudgeViewSet(ModelViewSet):
         url_path='testset/(?P<testset_id>[0-9]+)'
                  '/testcase/(?P<testcase_id>[0-9]+)'
     )
-    def put_testcase_judge_result(self, request, pk, testset_id, testcase_id):
+    def put_testcase_judge_result(
+            self, request, pk, testset_id, testcase_id
+    ):  # pragma: no cover
         judge_result = models.JudgeResult.objects.get(pk=pk)
 
         partial_data = request.data
@@ -106,7 +116,7 @@ class JudgeViewSet(ModelViewSet):
             updated_testcases = []
             for testcase in testset['testcases']:
                 if int(testset['id']) == int(testset_id) and \
-                        int(testcase['id']) == int(testcase_id):
+                                int(testcase['id']) == int(testcase_id):
                     testcase = update_dict_in_exist_keys(
                         testcase, partial_data
                     )
@@ -122,7 +132,9 @@ class JudgeViewSet(ModelViewSet):
         )
 
     @detail_route(methods=['patch'], url_path='testset/(?P<testset_id>[0-9]+)')
-    def put_testset_judge_result(self, request, pk, testset_id):
+    def put_testset_judge_result(
+            self, request, pk, testset_id
+    ):  # pragma: no cover
         judge_result = models.JudgeResult.objects.get(pk=pk)
 
         partial_data = request.data
