@@ -86,6 +86,7 @@ class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
         user = self.request.user
         qs = models.JudgeResult.objects.all() if is_instructor(user) \
             else models.JudgeResult.objects.filter(submission__user=user)
+        qs = self.filter_queryset_by_parents_lookups(qs)
         results = get_latest_judge_result_queryset(qs)
         return results.order_by('-created_at')
 
