@@ -2,10 +2,9 @@ from enum import Enum
 
 from django.contrib.auth.models import User
 from django.db import models
-
-# Create your models here.
 from django_mysql.models import JSONField
 
+from api.judge import judge
 from api.s3 import get_submission_path
 from coding.custom_storages import MediaStorage
 
@@ -184,8 +183,13 @@ class Submission(BaseModel):
         else:
             super(Submission, self).save(*args, **kwargs)
 
-        JudgeResult.create_initial_judge_result(self)
-        # TODO : call JudgeRequest to Treadmill
+        # TODO: Create new JudgeRequest
+        judge_result = JudgeResult.create_initial_judge_result(self)
+        judge(
+            request_id=judge_result.id,
+            problem_id=self.problem_id,
+            submission_id=self.pk
+        )
 
 
 class JudgeStatus(Enum):

@@ -159,6 +159,9 @@ class BaseSettings:
 
     STATIC_ROOT = '/var/www/coding/static/'
 
+    REDIS_HOST = 'localhost'
+    REDIS_PORT = 6379
+
 
 class LocalSettings(BaseSettings):
     # Settings for local development
