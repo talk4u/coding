@@ -132,6 +132,8 @@ class ProblemRankSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    code_size = serializers.IntegerField(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     submission_code = SerializerMethodField()
 
     class Meta:
