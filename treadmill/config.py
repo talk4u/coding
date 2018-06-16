@@ -77,3 +77,8 @@ class ProdConfig(BaseConfig):
     API_ENDPOINT = 'http://api.coding.talk4u.kr/api'
     API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
     REDIS_HOST = 'talk4u-message-queue.b4awpy.0001.apne1.cache.amazonaws.com'
+
+    def __init__(self, **kwargs):
+        self._set_prop('HOST_WORKSPACE_ROOT', kwargs)
+        self._set_prop('S3FS_ROOT', kwargs)
+        super().__init__(**kwargs)
