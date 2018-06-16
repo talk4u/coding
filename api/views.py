@@ -72,7 +72,8 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
         pass
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        code_size = serializer.validated_data['submission_data'].size
+        serializer.save(user=self.request.user, code_size=code_size)
 
 
 class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
@@ -86,6 +87,7 @@ class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
         user = self.request.user
         qs = models.JudgeResult.objects.all() if is_instructor(user) \
             else models.JudgeResult.objects.filter(submission__user=user)
+        qs = self.filter_queryset_by_parents_lookups(qs)
         results = get_latest_judge_result_queryset(qs)
         return results.order_by('-created_at')
 

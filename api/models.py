@@ -267,5 +267,5 @@ class JudgeResult(BaseModel):
             detail=test_sets, score=0,
             memory_used_bytes=0,
             time_elapsed_seconds=0,
-            code_size=0
+            code_size=submission.code_size
         )
