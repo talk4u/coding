@@ -26,7 +26,7 @@ class BuilderEnviron(Environ):
         self.container: Container = None
 
     def _setup(self):
-        container_tag = self.context.config.builder_container_tag(self.lang)
+        container_tag = self.lang.profile.builder_image_tag(self.context.config)
         if container_tag is None:
             raise UnsupportedLanguage(self.lang)
         self.container = yield ops.RunDockerContainerOp(
@@ -65,7 +65,7 @@ class SandboxEnviron(Environ):
         self.isolated = isolated
 
     def _setup(self):
-        container_tag = self.context.config.sandbox_container_tag(self.lang)
+        container_tag = self.lang.profile.sandbox_image_tag(self.context.config)
         if container_tag is None:
             raise UnsupportedLanguage(self.lang)
 
