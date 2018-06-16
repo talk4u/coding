@@ -2,6 +2,10 @@ import os
 from .models import Lang
 
 
+def reg(tag, version):
+    return os.path.join('648688992032.dkr.ecr.ap-northeast-1.amazonaws.com/', tag) + ':' + version
+
+
 class BaseConfig(object):
     API_ENDPOINT: str = None
     API_SECRET_KEY: str = None
@@ -14,13 +18,13 @@ class BaseConfig(object):
     HOST_WORKSPACE_ROOT: str = None
     S3FS_ROOT: str = None
 
-    GCC_BUILDER_TAG = 'talk4u/treadmill-builder-gcc:v0.1.0'
-    GO_BUILDER_TAG = 'talk4u/treadmill-builder-go110:v0.1.0'
-    JDK_BUILDER_TAG = 'talk4u/treadmill-builder-jdk8:v0.1.0'
+    GCC_BUILDER_TAG = reg('talk4u/treadmill-builder-gcc', '0.1.0')
+    GO_BUILDER_TAG = reg('talk4u/treadmill-builder-go110', '0.1.0')
+    JDK_BUILDER_TAG = reg('talk4u/treadmill-builder-jdk8', '0.1.0')
 
-    NATIVE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-native:v0.1.0'
-    JRE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-jre8:v0.1.0'
-    PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.1'
+    NATIVE_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-native', '0.1.0')
+    JRE_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-jre8', '0.1.0')
+    PY3_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-py36', '0.1.1')
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
