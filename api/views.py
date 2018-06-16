@@ -72,7 +72,8 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
         pass
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        code_size = serializer.validated_data['submission_data'].size
+        serializer.save(user=self.request.user, code_size=code_size)
 
 
 class JudgeResultViewSet(NestedViewSetMixin, ModelViewSet):
