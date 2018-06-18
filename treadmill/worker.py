@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
@@ -6,7 +7,6 @@ from dramatiq.brokers.redis import RedisBroker
 from treadmill.config import BaseConfig, DevConfig
 from treadmill.context import JudgeContextFactory
 from treadmill.models import JudgeRequest
-from treadmill.signal import RetryableError
 from treadmill.tasks import JudgePipeline, EnqueuePipeline
 from treadmill.utils import cached
 
@@ -36,13 +36,13 @@ class WorkerFactory(object):
         self.context_factory = JudgeContextFactory(config)
 
     def _judge(self, request_data):
-        request = JudgeRequest(**request_data)
+        request = JudgeRequest.load(request_data)
         _logger.info('Received ' + str(request))
         with self.context_factory.new(request):
             JudgePipeline().run()
 
     def _retry(self, request_data):
-        request = JudgeRequest(**request_data)
+        request = JudgeRequest.load(request_data)
         _logger.info('Received ' + str(request))
         with self.context_factory.new(request):
             EnqueuePipeline().run()
@@ -92,9 +92,10 @@ def main():
     request = JudgeRequest(
         id=1,
         problem_id=1,
-        submission_id=3
+        submission_id=3,
+        created_at=datetime.now()
     ).dump()
-    factory.judge_worker().send(request)
+    factory.judge_worker()(request)
 
 
 if __name__ == '__main__':

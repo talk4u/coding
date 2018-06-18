@@ -1,5 +1,4 @@
 import logging
-import traceback
 import threading
 
 import docker

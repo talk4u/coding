@@ -147,14 +147,14 @@ class DataModel(object, metaclass=DataModelMeta):
     def dump(self):
         data, error = self.schema().dump(self)
         if error:
-            raise error
+            raise TypeError(error)
         return data
 
     @classmethod
     def load(cls, data):
         data, error = cls.schema().load(data)
         if error:
-            raise error
+            raise TypeError(error)
         return cls(**data)
 
     @classmethod
