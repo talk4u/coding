@@ -18,10 +18,6 @@ class FetchSubmissionOp(Task):
         self.context.subm_lang = subm.lang
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
 
-        # Some old contents uses kiB
-        if judge_spec.mem_limit_bytes <= 1_048_576:  # 1MiB
-            judge_spec.mem_limit_bytes *= 1024
-
         self.context.grader = judge_spec.grader
         if judge_spec.grader:
             self.context.grader_lang = judge_spec.grader.lang
