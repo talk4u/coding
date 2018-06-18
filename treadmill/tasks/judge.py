@@ -3,7 +3,7 @@ from treadmill.signal import *
 from . import ops
 from . import path
 from .base import Task
-from .container import SandboxEnviron, ExecuteTask
+from .container import SandboxEnviron, ExecuteResult, ExecuteSubmissionTask, ExecuteGraderTask
 
 
 class JudgeTask(Task):
@@ -72,7 +72,7 @@ class JudgeTask(Task):
         return testset.score
 
     def _judge_testcase(self, testset, testcase):
-        result = yield ExecuteTask(
+        result = yield ExecuteSubmissionTask(
             sandbox=self.subm_sandbox,
             stdin_file=path.test_input_file(testset, testcase),
             bin_file=path.subm_bin_file()
@@ -96,21 +96,26 @@ class JudgeTask(Task):
                 }))
 
         if self.grader_sandbox:
-            result: ExecuteTask.Result = ExecuteTask(
+            result = ExecuteGraderTask(
                 sandbox=self.grader_sandbox,
-                stdin_file=result.stdout_file,
-                bin_file=path.grader_bin_file()
+                bin_file=path.grader_bin_file(),
+                testcase_input_file=path.test_input_file(testset, testcase),
+                testcase_output_file=result.stdout_file,
+                solution_file=path.test_output_file(testset, testcase)
             ).run()
 
             if not result.ok:
                 raise GraderRuntimeError(result.stderr)
 
-        output_matches = yield ops.CompareFileOp(
-            target=result.stdout_file,
-            expected=path.test_output_file(testset, testcase)
-        )
+            grader_output = yield ops.ReadFileOp(result.stdout_file)
+            is_correct = grader_output == '1'  # '1': Correct, '0': Incorrect
+        else:
+            is_correct = yield ops.CompareFileOp(
+                target=result.stdout_file,
+                expected=path.test_output_file(testset, testcase)
+            )
 
-        if not output_matches:
+        if not is_correct:
             raise WrongAnswer()
 
         return subm_exec_meta

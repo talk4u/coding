@@ -26,7 +26,7 @@ class Java8(LangProfile, lang_name='java'):
         out_dir = os.path.dirname(out_file)
         return ['javac', '-d', out_dir, src_file]
 
-    def get_exec_cmd(self, bin_file):
+    def get_exec_cmd(self, bin_file, args=()):
         class_path = os.path.dirname(bin_file)
         return [
             '/usr/bin/java',
@@ -34,5 +34,6 @@ class Java8(LangProfile, lang_name='java'):
             '-Xmx256M',
             '-Xss16M',
             '-cp', class_path,
-            'Main'
+            'Main',
+            *args
         ]
