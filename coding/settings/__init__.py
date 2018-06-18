@@ -246,6 +246,7 @@ class StagingSettings(BaseSettings):
 class ProductionSettings(StagingSettings):
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = False
+    REDIS_HOST = 'talk4u-message-queue.b4awpy.0001.apne1.cache.amazonaws.com'
 
 
 MODE = os.environ.get('CODING_DJANGO_MODE', 'Local').title()
