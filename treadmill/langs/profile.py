@@ -53,5 +53,5 @@ class LangProfile(ABC):
         pass
 
     @abstractmethod
-    def get_exec_cmd(self, bin_file):
+    def get_exec_cmd(self, bin_file, args=()):
         pass

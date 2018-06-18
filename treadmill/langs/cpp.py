@@ -29,5 +29,5 @@ class Cpp14(LangProfile, lang_name='cpp'):
             src_file
         ]
 
-    def get_exec_cmd(self, bin_file):
-        return [bin_file]
+    def get_exec_cmd(self, bin_file, args=()):
+        return [bin_file, *args]

@@ -23,5 +23,5 @@ class Go110(LangProfile, lang_name='go'):
     def get_compile_cmd(self, src_file, out_file):
         return ['go', 'build', '-o', out_file, src_file]
 
-    def get_exec_cmd(self, bin_file):
-        return [bin_file]
+    def get_exec_cmd(self, bin_file, args=()):
+        return [bin_file, *args]

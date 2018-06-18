@@ -23,5 +23,5 @@ class Python36(LangProfile, lang_name='python3'):
     def get_compile_cmd(self, src_file, out_file):
         return ['/usr/local/bin/python', '-m', 'py_compile', src_file]
 
-    def get_exec_cmd(self, bin_file):
-        return ['/usr/local/bin/python', bin_file]
+    def get_exec_cmd(self, bin_file, args=()):
+        return ['/usr/local/bin/python', bin_file, *args]
