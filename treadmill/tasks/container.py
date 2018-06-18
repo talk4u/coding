@@ -16,7 +16,9 @@ __all__ = [
     'BuilderEnviron',
     'SandboxEnviron',
     'CompileTask',
-    'ExecuteTask'
+    'ExecuteResult',
+    'ExecuteSubmissionTask',
+    'ExecuteGraderTask'
 ]
 
 
@@ -86,12 +88,11 @@ class SandboxEnviron(Environ):
         if self.container:
             yield ops.KillDockerContainerOp(self.container)
 
-    def _exec_normal(self, *, bin_file, stdin_file, stdout_file):
+    def _exec_normal(self, *, bin_file, stdout_file, args=()):
         result = yield ops.ExecInDockerContainerOp(
             self.container,
             cmd=[
-                *self.lang.profile.get_exec_cmd(bin_file),
-                '<', stdin_file,
+                *self.lang.profile.get_exec_cmd(bin_file, args),
                 '1>', stdout_file
             ],
             privileged=False
@@ -99,7 +100,7 @@ class SandboxEnviron(Environ):
         return result
 
     def _exec_in_isolate(self, *, bin_file, stdin_file, stdout_file, stderr_file,
-                         meta_file, limits):
+                         meta_file, limits, args=()):
         pid_limits = limits.pid_limits
         if self.lang == Lang.JAVA:
             # For not-yet-known reason JVM requires at least 11 processes to run
@@ -116,7 +117,7 @@ class SandboxEnviron(Environ):
                 *mapping_opts,
                 '--cg',
                 f'--meta={meta_file}',
-                f'--cg-mem={limits.mem_limit_bytes // 1024}',
+                f'--cg-mem={limits.mem_limit_bytes // 1024 * 2}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',
                 f'--extra-time=1.0',
@@ -127,29 +128,37 @@ class SandboxEnviron(Environ):
                 f'--stderr={stderr_file}',
                 '--run',
                 '--',
-                *self.lang.profile.get_exec_cmd(bin_file)
+                *self.lang.profile.get_exec_cmd(bin_file, args)
             ],
             privileged=True
         )
         return result
 
-    def exec(self, *, bin_file, stdin_file, stdout_file, stderr_file=None,
-             meta_file=None, limits=None):
-        if self.isolated:
-            result = yield from self._exec_in_isolate(
-                bin_file=bin_file.sandbox_path,
-                stdin_file=stdin_file.sandbox_path,
-                stdout_file=stdout_file.sandbox_path,
-                stderr_file=stderr_file.sandbox_path,
-                meta_file=meta_file.container_path,  # Meta file resides in container
-                limits=limits
+    def exec_subm(self, *, bin_file, stdin_file, stdout_file, stderr_file,
+                  meta_file, limits):
+        assert self.isolated
+        result = yield from self._exec_in_isolate(
+            bin_file=bin_file.sandbox_path,
+            stdin_file=stdin_file.sandbox_path,
+            stdout_file=stdout_file.sandbox_path,
+            stderr_file=stderr_file.sandbox_path,
+            meta_file=meta_file.container_path,  # Meta file resides in container
+            limits=limits
+        )
+        return result
+
+    def exec_grader(self, *, bin_file, stdout_file, test_input_file,
+                    test_output_file, solution_file):
+        assert not self.isolated
+        result = yield from self._exec_normal(
+            bin_file=bin_file.container_path,
+            stdout_file=stdout_file.container_path,
+            args=(
+                test_input_file.container_path,
+                test_output_file.container_path,
+                solution_file.container_path
             )
-        else:
-            result = yield from self._exec_normal(
-                bin_file=bin_file.container_path,
-                stdin_file=stdin_file.container_path,
-                stdout_file=stdout_file.container_path
-            )
+        )
         return result
 
 
@@ -174,44 +183,47 @@ class CompileTask(Task):
         return self.Result(exit_code=exit_code, output=output)
 
 
-class ExecuteTask(Task):
-    class Result(ObjectDict, ContextMixin):
-        exec_id: int
-        exit_code: int
-        output: str
-        meta: Optional[IsolateExecMeta]
-        stdout_file: path.AFP
-        stderr_file: path.AFP
+class ExecuteResult(ObjectDict, ContextMixin):
+    exec_id: int
+    exit_code: int
+    output: str
+    meta: Optional[IsolateExecMeta]
+    stdout_file: path.AFP
+    stderr_file: path.AFP
 
-        @property
-        def ok(self):
-            return self.exit_code == 0
+    @property
+    def ok(self):
+        return self.exit_code == 0
 
-        @property
-        def fatal(self):
-            return self.exit_code >= 2
+    @property
+    def fatal(self):
+        return self.exit_code >= 2
 
-        @property
-        def timeout(self):
+    @property
+    def timeout(self):
+        if self.meta.time_wall:
             return self.meta.time_wall > self.context.judge_spec.time_limit_seconds
 
-        @property
-        def out_of_memory(self):
-            return (self.meta.exit_code == 1 and
-                    self.meta.cg_mem > self.context.judge_spec.mem_limit_bytes)
+    @property
+    def out_of_memory(self):
+        if self.meta.cg_mem:
+            return (self.exit_code == 1 and
+                    self.meta.cg_mem >= self.context.judge_spec.mem_limit_bytes)
 
-        @property
-        def stdout(self):
-            if self.stdout_file:
-                with open(self.stdout_file.host_path, 'r') as f:
-                    return f.read()
+    @property
+    def stdout(self):
+        if self.stdout_file:
+            with open(self.stdout_file.host_path, 'r') as f:
+                return f.read()
 
-        @property
-        def stderr(self):
-            if self.stderr_file:
-                with open(self.stderr_file.host_path, 'r') as f:
-                    return f.read()
+    @property
+    def stderr(self):
+        if self.stderr_file:
+            with open(self.stderr_file.host_path, 'r') as f:
+                return f.read()
 
+
+class ExecuteSubmissionTask(Task):
     def __init__(self, *,
                  sandbox: SandboxEnviron,
                  bin_file: path.AFP,
@@ -225,7 +237,7 @@ class ExecuteTask(Task):
         stdout_file = path.AFP(path=['logs', f'{exec_id}.stdout'])
         stderr_file = path.AFP(path=['logs', f'{exec_id}.stderr'])
         meta_file = path.AFP(path=['logs', f'{exec_id}.meta'])
-        result = self.Result(
+        result = ExecuteResult(
             exec_id=exec_id,
             stdout_file=stdout_file,
             stderr_file=stderr_file
@@ -235,10 +247,9 @@ class ExecuteTask(Task):
         yield ops.CheckFileExistsOp(self.bin_file)
         yield ops.CreateFileOp(stdout_file, mode=0o666)
         yield ops.CreateFileOp(stderr_file, mode=0o666)
-        if self.sandbox.isolated:
-            yield ops.CreateFileOp(meta_file, mode=0o666)
+        yield ops.CreateFileOp(meta_file, mode=0o666)
 
-        exit_code, output = yield from self.sandbox.exec(
+        exit_code, output = yield from self.sandbox.exec_subm(
             bin_file=self.bin_file,
             stdin_file=self.stdin_file,
             stdout_file=stdout_file,
@@ -249,8 +260,48 @@ class ExecuteTask(Task):
         result.exit_code = exit_code
         result.output = output.decode('utf-8')
 
-        if self.sandbox.isolated and not result.is_fatal:
+        if not result.is_fatal:
             meta_str = yield ops.ReadFileOp(meta_file)
             result.meta = IsolateExecMeta.parse(meta_str)
+
+        return result
+
+
+class ExecuteGraderTask(Task):
+    def __init__(self, *,
+                 sandbox: SandboxEnviron,
+                 bin_file: path.AFP,
+                 testcase_input_file: path.AFP,
+                 testcase_output_file: path.AFP,
+                 solution_file: path.AFP):
+        self.sandbox = sandbox
+        self.bin_file = bin_file
+        self.testcase_input_file = testcase_input_file
+        self.testcase_output_file = testcase_output_file
+        self.solution_file = solution_file
+
+    def _run(self):
+        exec_id = str(uuid.uuid4())
+        stdout_file = path.AFP(path=['logs', f'{exec_id}.stdout'])
+        result = ExecuteResult(
+            exec_id=exec_id,
+            stdout_file=stdout_file,
+        )
+
+        yield ops.CheckFileExistsOp(self.bin_file)
+        yield ops.CheckFileExistsOp(self.testcase_input_file)
+        yield ops.CheckFileExistsOp(self.testcase_output_file)
+        yield ops.CheckFileExistsOp(self.solution_file)
+        yield ops.CreateFileOp(stdout_file, mode=0o666)
+
+        exit_code, output = yield from self.sandbox.exec_grader(
+            bin_file=self.bin_file,
+            stdout_file=stdout_file,
+            test_input_file=self.testcase_input_file,
+            test_output_file=self.testcase_output_file,
+            solution_file=self.solution_file
+        )
+        result.exit_code = exit_code
+        result.output = output.decode('utf-8')
 
         return result

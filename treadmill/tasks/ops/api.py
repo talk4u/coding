@@ -18,10 +18,6 @@ class FetchSubmissionOp(Task):
         self.context.subm_lang = subm.lang
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
 
-        # Some old contents uses kiB
-        if judge_spec.mem_limit_bytes <= 1_048_576:  # 1MiB
-            judge_spec.mem_limit_bytes *= 1024
-
         self.context.grader = judge_spec.grader
         if judge_spec.grader:
             self.context.grader_lang = judge_spec.grader.lang
@@ -81,7 +77,7 @@ class UpdateJudgeResultOp(Task):
                 status=self.testcase_status,
                 memory_used_bytes=self.mem,
                 time_elapsed_seconds=self.time,
-                error=self.error
+                error_msg=self.error
             )
         )
 
@@ -101,7 +97,7 @@ class UpdateJudgeResultOp(Task):
             self.context.request.id,
             JudgeResult(
                 status=self.status,
-                total_score=self.context.total_score,
+                score=self.context.total_score,
                 memory_used_bytes=self.context.max_mem,
                 time_elapsed_seconds=self.context.total_time
             )
