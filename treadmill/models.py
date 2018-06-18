@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from treadmill.utils import DataModel
+from treadmill.langs import LangProfile
 
 
 S3Key = str
@@ -23,32 +24,16 @@ class TestSet(DataModel):
     updated_at: datetime
 
 
-class LangProfile(enum.Enum):
-    CPP = ('g++ 6.4.0', True, 'main.cpp', 'main')
-    JAVA = ('OpenJDK 8u151', True, 'Main.java', 'Main.class')
-    PYTHON3 = ('Python 3.6.5', False, 'main.py', 'main.py')
-    GO = ('Go 1.10.1', True, 'main.go', 'main')
-
-    def __init__(self, version, need_compile, src_file_name, bin_file_name):
-        self.version = version
-        self.need_compile = need_compile
-        self.src_file_name = src_file_name
-        self.bin_file_name = bin_file_name
-
-
 class Lang(enum.Enum):
     CPP = 'c++'
     JAVA = 'java'
     PYTHON3 = 'python3'
     GO = 'go'
+    UNKNOWN = ''
 
     @property
     def profile(self) -> LangProfile:
-        return getattr(LangProfile, self.name)
-
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
+        return LangProfile.get_profile(self)
 
 
 class Grader(DataModel):
@@ -59,7 +44,7 @@ class Grader(DataModel):
 
 
 class JudgeSpec(DataModel):
-    total_score: int
+    total_score: int = 100
     testsets: List[TestSet]
     grader: Optional[Grader]
     mem_limit_bytes: int
@@ -70,6 +55,7 @@ class JudgeSpec(DataModel):
 
 
 class Problem(DataModel):
+    id: int
     judge_spec: JudgeSpec
 
 
@@ -89,10 +75,6 @@ class JudgeStatus(enum.Enum):
     FAILED = 'FAIL'
     INTERNAL_ERROR = 'ERR'
 
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
-
 
 class TestCaseJudgeStatus(enum.Enum):
     NOT_JUDGED = 'NA'
@@ -101,10 +83,6 @@ class TestCaseJudgeStatus(enum.Enum):
     MEMORY_LIMIT_EXCEEDED = 'MLE'
     TIME_LIMIT_EXCEEDED = 'TLE'
     PASSED = 'PASS'
-
-    @classmethod
-    def choices(cls):
-        return [(p.value, p.name) for p in cls]
 
 
 class TestCaseJudgeResult(DataModel):
@@ -128,9 +106,9 @@ class JudgeResult(DataModel):
 
 class JudgeRequest(DataModel):
     id: int
+    problem_id: int
     submission_id: int
-    rejudge: bool
-    created_at: datetime
+    created_at: Optional[datetime]
 
 
 class IsolateExecMeta(object):
@@ -154,9 +132,11 @@ class IsolateExecMeta(object):
     @classmethod
     def parse(cls, data):
         props = {
-            k: ':'.join(v)
-            for line in data.split('\n')
-            for k, *v in line.split(':')
+            pair[0] : ':'.join(pair[1:])
+            for pair in [
+                line.split(':')
+                for line in data.split('\n') if len(line) > 0
+            ]
         }
         return IsolateExecMeta(**props)
 
@@ -238,6 +218,6 @@ class IsolateExecMeta(object):
         When control groups are enabled, this is the total memory use by the
         whole control group (in bytes).
         """
-        cg_mem = self._props.get('cg_mem')
+        cg_mem = self._props.get('cg-mem')
         if cg_mem is not None:
-            return int(cg_mem) * 1000
+            return int(cg_mem) * 1024

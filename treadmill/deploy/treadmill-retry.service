@@ -1,0 +1,13 @@
+[Unit]
+Description=talk4u treadmill daemon
+After=s3fs.target
+
+[Service]
+PIDFile=/home/ubuntu/treadmill-treadmill_retry.pid
+ExecStart=/home/ubuntu/.local/bin/pipenv run dramatiq treadmill.main --threads=1 --queues treadmill_retry --pid-file=/home/ubuntu/treadmill-retry.pid --log-file=/home/ubuntu/logs/treadmill-retry.log
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+WorkingDirectory=/home/ubuntu/coding
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/home/ubuntu/treadmill.env

@@ -108,7 +108,7 @@ class BaseSettings:
             'rest_framework.permissions.IsAuthenticated',
         ),
         'DEFAULT_AUTHENTICATION_CLASSES': (
-            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+            'coding.jwt.CustomJwtAuthentication',
             'rest_framework.authentication.SessionAuthentication',
             'rest_framework.authentication.BasicAuthentication',
         ),
@@ -117,6 +117,7 @@ class BaseSettings:
     JWT_AUTH = {
         'JWT_RESPONSE_PAYLOAD_HANDLER': 'coding.jwt.jwt_response_payload_handler',
     }
+    JWT_REFRESH_EXPIRATION_DELTA = 14_400_000  # 10,000 days in
 
     LOGIN_URL = 'rest_framework:login'
     LOGOUT_URL = 'rest_framework:logout'
@@ -158,6 +159,9 @@ class BaseSettings:
     STATIC_URL = '/static/'
 
     STATIC_ROOT = '/var/www/coding/static/'
+
+    REDIS_HOST = 'localhost'
+    REDIS_PORT = 6379
 
 
 class LocalSettings(BaseSettings):

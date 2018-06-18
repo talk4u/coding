@@ -26,7 +26,7 @@ class BuilderEnviron(Environ):
         self.container: Container = None
 
     def _setup(self):
-        container_tag = self.context.config.builder_container_tag(self.lang)
+        container_tag = self.lang.profile.builder_image_tag(self.context.config)
         if container_tag is None:
             raise UnsupportedLanguage(self.lang)
         self.container = yield ops.RunDockerContainerOp(
@@ -41,34 +41,34 @@ class BuilderEnviron(Environ):
         src_file = src_file.container_path
         out_file = out_file.container_path
 
-        if self.lang == Lang.CPP:
-            yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['g++', '-o', out_file, src_file]
-            )
-        elif self.lang == Lang.JAVA:
-            dest_dir = os.path.dirname(out_file)
-            yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['javac', '-d', dest_dir, src_file]
-            )
-        elif self.lang == Lang.GO:
-            yield ops.ExecInDockerContainerOp(
-                container=self.container,
-                cmd=['go', 'build', '-o', out_file, src_file]
-            )
-        else:
-            raise UnsupportedLanguage(self.lang)
+        result = yield ops.ExecInDockerContainerOp(
+            container=self.container,
+            cmd=self.lang.profile.get_compile_cmd(src_file, out_file)
+        )
+        return result
 
 
 class SandboxEnviron(Environ):
+    # `dir_in` in container is seen as `dir_out` in isolated sandbox
+    _sandbox_mapping_opt = '--dir={dir_in}={dir_out}:rw'.format(
+        dir_in=path.SANDBOX_ROOT.sandbox_path,
+        dir_out=path.SANDBOX_ROOT.container_path
+    )
+    _etc_mapping_opt = '--dir={dir_in}={dir_out}:rw'.format(
+        dir_in=path.ETC.sandbox_path,
+        dir_out=path.ETC.container_path
+    )
+
     def __init__(self, *, lang, isolated):
         self.lang = lang
-        self.container_tag = self.context.config.sandbox_container_tag(lang)
         self.container = None
         self.isolated = isolated
 
     def _setup(self):
+        container_tag = self.lang.profile.sandbox_image_tag(self.context.config)
+        if container_tag is None:
+            raise UnsupportedLanguage(self.lang)
+
         self.container = yield ops.RunDockerContainerOp(
             container_tag=self.context.config.sandbox_container_tag(self.lang),
             privileged=self.isolated
@@ -77,82 +77,80 @@ class SandboxEnviron(Environ):
         if self.isolated:
             init_result = yield ops.ExecInDockerContainerOp(
                 container=self.container,
-                cmd=[
-                    'isolate',
-                    # `dir_in` in container is seen as `dir_out` in isolated sandbox
-                    '--dir={dir_in}={dir_out}'.format(
-                        dir_in=path.SANDBOX_ROOT.container_path,
-                        dir_out=path.SANDBOX_ROOT.sandbox_path
-                    ),
-                    '--init'
-                ]
+                cmd=['isolate', '--cg', '--init']
             )
             if init_result.exit_code != 0:
                 raise IsolateInitFail(init_result.output)
 
     def _teardown(self):
-        yield ops.KillDockerContainerOp(self.container)
-
-    def _get_run_cmd(self, bin_file: str):
-        if self.lang in [Lang.CPP, Lang.GO]:
-            return [bin_file]
-        elif self.lang == Lang.JAVA:
-            return ['java', bin_file]
-        elif self.lang == Lang.PYTHON3:
-            return ['python', bin_file]
-        else:
-            raise UnsupportedLanguage(self.lang)
+        if self.container:
+            yield ops.KillDockerContainerOp(self.container)
 
     def _exec_normal(self, *, bin_file, stdin_file, stdout_file):
-        return ops.ExecInDockerContainerOp(
+        result = yield ops.ExecInDockerContainerOp(
             self.container,
-            cmd=self._get_run_cmd(bin_file) + [
+            cmd=[
+                *self.lang.profile.get_exec_cmd(bin_file),
                 '<', stdin_file,
                 '1>', stdout_file
             ],
             privileged=False
         )
+        return result
 
     def _exec_in_isolate(self, *, bin_file, stdin_file, stdout_file, stderr_file,
                          meta_file, limits):
-        return ops.ExecInDockerContainerOp(
+        pid_limits = limits.pid_limits
+        if self.lang == Lang.JAVA:
+            # For not-yet-known reason JVM requires at least 11 processes to run
+            pid_limits = 16
+
+        mapping_opts = [self._sandbox_mapping_opt]
+        if self.lang == Lang.PYTHON3:
+            mapping_opts += [self._etc_mapping_opt]  # Python requires /etc/passwd file
+
+        result = yield ops.ExecInDockerContainerOp(
             container=self.container,
             cmd=[
                 'isolate',
+                *mapping_opts,
+                '--cg',
                 f'--meta={meta_file}',
-                f'--mem={limits.mem_limit_bytes // 1024}',
+                f'--cg-mem={limits.mem_limit_bytes // 1024}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',
-                f'--extra-time={limits.time_limit_seconds + 1}',
+                f'--extra-time=1.0',
                 f'--fsize={limits.file_size_limit_kilos}',
-                f'--processes={limits.pid_limits}',
+                f'--processes={pid_limits}',
                 f'--stdin={stdin_file}',
                 f'--stdout={stdout_file}',
                 f'--stderr={stderr_file}',
                 '--run',
                 '--',
-                *self._get_run_cmd(bin_file)
+                *self.lang.profile.get_exec_cmd(bin_file)
             ],
             privileged=True
         )
+        return result
 
     def exec(self, *, bin_file, stdin_file, stdout_file, stderr_file=None,
              meta_file=None, limits=None):
         if self.isolated:
-            return self._exec_in_isolate(
+            result = yield from self._exec_in_isolate(
                 bin_file=bin_file.sandbox_path,
                 stdin_file=stdin_file.sandbox_path,
                 stdout_file=stdout_file.sandbox_path,
                 stderr_file=stderr_file.sandbox_path,
-                meta_file=meta_file.sandbox_path,
+                meta_file=meta_file.container_path,  # Meta file resides in container
                 limits=limits
             )
         else:
-            return self._exec_normal(
+            result = yield from self._exec_normal(
                 bin_file=bin_file.container_path,
                 stdin_file=stdin_file.container_path,
                 stdout_file=stdout_file.container_path
             )
+        return result
 
 
 class CompileTask(Task):
@@ -195,13 +193,12 @@ class ExecuteTask(Task):
 
         @property
         def timeout(self):
-            return (self.meta.killed and
-                    self.meta.time_wall > self.context.judge_spec.time_limit_seconds)
+            return self.meta.time_wall > self.context.judge_spec.time_limit_seconds
 
         @property
         def out_of_memory(self):
-            return (self.meta.exitsig == 11 and  # SIGSEGV
-                    self.meta.max_rss > self.context.judge_spec.mem_limit_bytes)
+            return (self.meta.exit_code == 1 and
+                    self.meta.cg_mem > self.context.judge_spec.mem_limit_bytes)
 
         @property
         def stdout(self):
@@ -225,9 +222,9 @@ class ExecuteTask(Task):
 
     def _run(self):
         exec_id = str(uuid.uuid4())
-        stdout_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.stdout'])
-        stderr_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.stderr'])
-        meta_file = path.AFP(path=['sandbox', 'logs', f'{exec_id}.meta'])
+        stdout_file = path.AFP(path=['logs', f'{exec_id}.stdout'])
+        stderr_file = path.AFP(path=['logs', f'{exec_id}.stderr'])
+        meta_file = path.AFP(path=['logs', f'{exec_id}.meta'])
         result = self.Result(
             exec_id=exec_id,
             stdout_file=stdout_file,
@@ -236,12 +233,12 @@ class ExecuteTask(Task):
 
         yield ops.CheckFileExistsOp(self.stdin_file)
         yield ops.CheckFileExistsOp(self.bin_file)
-        yield ops.CreateFileOp(stdout_file, mode=666)
-        yield ops.CreateFileOp(stderr_file, mode=666)
+        yield ops.CreateFileOp(stdout_file, mode=0o666)
+        yield ops.CreateFileOp(stderr_file, mode=0o666)
         if self.sandbox.isolated:
-            yield ops.CreateFileOp(meta_file, mode=666)
+            yield ops.CreateFileOp(meta_file, mode=0o666)
 
-        result.exit_code, result.output = yield self.sandbox.exec(
+        exit_code, output = yield from self.sandbox.exec(
             bin_file=self.bin_file,
             stdin_file=self.stdin_file,
             stdout_file=stdout_file,
@@ -249,6 +246,8 @@ class ExecuteTask(Task):
             meta_file=meta_file,
             limits=self.sandbox.isolated and self.context.judge_spec
         )
+        result.exit_code = exit_code
+        result.output = output.decode('utf-8')
 
         if self.sandbox.isolated and not result.is_fatal:
             meta_str = yield ops.ReadFileOp(meta_file)

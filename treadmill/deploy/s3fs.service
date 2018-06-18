@@ -1,0 +1,15 @@
+[Unit]
+Description=mount s3fs on boot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=s3fs talk4u-data /home/ubuntu/treadmill-s3fs -o allow_other -o umask=0002
+ExecStop=umount /home/ubuntu/treadmill-s3fs
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target

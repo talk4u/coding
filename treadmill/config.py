@@ -2,25 +2,29 @@ import os
 from .models import Lang
 
 
+def reg(tag, version):
+    return os.path.join('648688992032.dkr.ecr.ap-northeast-1.amazonaws.com/', tag) + ':' + version
+
+
 class BaseConfig(object):
     API_ENDPOINT: str = None
-    API_TOKEN: str = None
+    API_SECRET_KEY: str = None
 
     REDIS_HOST: str = None
-    REDIS_PORT: int = 6537
+    REDIS_PORT: int = 6379
 
     SENTRY_DSN: str = None
 
     HOST_WORKSPACE_ROOT: str = None
     S3FS_ROOT: str = None
 
-    GCC_BUILDER_TAG = 'talk4u/treadmill-builder-gcc:v0.1.0'
-    GO_BUILDER_TAG = 'talk4u/treadmill-builder-go110:v0.1.0'
-    JDK_BUILDER_TAG = 'talk4u/treadmill-builder-jdk8:v0.1.0'
+    GCC_BUILDER_TAG = reg('talk4u/treadmill-builder-gcc', '0.1.0')
+    GO_BUILDER_TAG = reg('talk4u/treadmill-builder-go110', '0.1.0')
+    JDK_BUILDER_TAG = reg('talk4u/treadmill-builder-jdk8', '0.1.0')
 
-    NATIVE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-native:v0.1.0'
-    JRE_SANDBOX_TAG = 'talk4u/treadmill-sandbox-jre8:v0.1.0'
-    PY3_SANDBOX_TAG = 'talk4u/treadmill-sandbox-py36:v0.1.0'
+    NATIVE_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-native', '0.1.0')
+    JRE_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-jre8', '0.1.0')
+    PY3_SANDBOX_TAG = reg('talk4u/treadmill-sandbox-py36', '0.1.1')
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -30,7 +34,7 @@ class BaseConfig(object):
         if key in kwargs:
             setattr(self, key, kwargs.pop(key))
         else:
-            setattr(self, key, os.environ['TM_' + key])
+            setattr(self, key, os.environ['TREADMILL_' + key])
 
     @classmethod
     def builder_container_tag(cls, lang):
@@ -52,8 +56,8 @@ class BaseConfig(object):
 
 
 class DevConfig(BaseConfig):
-    API_ENDPOINT = 'http://localhost:8080/api'
-    API_TOKEN = ''
+    API_ENDPOINT = 'http://localhost:8000/api'
+    API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
     REDIS_HOST = 'localhost'
 
     def __init__(self, **kwargs):
@@ -63,4 +67,19 @@ class DevConfig(BaseConfig):
 
 
 class TestConfig(BaseConfig):
+    API_ENDPOINT = 'http://localhost:8000/api'
+    API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
+    REDIS_HOST = 'localhost'
     pass
+
+
+class ProdConfig(BaseConfig):
+    API_ENDPOINT = 'http://api.coding.talk4u.kr/api'
+    API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
+    REDIS_HOST = 'talk4u-message-queue.b4awpy.0001.apne1.cache.amazonaws.com'
+    SENTRY_DSN = 'https://933cbe8327704f9ea2753e644091a355:62365dabd7f74b1e8c66588f27e7f6ec@sentry.io/1204221'
+
+    def __init__(self, **kwargs):
+        self._set_prop('HOST_WORKSPACE_ROOT', kwargs)
+        self._set_prop('S3FS_ROOT', kwargs)
+        super().__init__(**kwargs)

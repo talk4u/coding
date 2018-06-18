@@ -1,5 +1,5 @@
 from treadmill.models import TestCaseJudgeResult, TestSetJudgeResult, TestCaseJudgeStatus, JudgeResult
-from treadmill.tasks.ops.base import Operation
+from treadmill.tasks.base import Task
 
 __all__ = [
     'FetchSubmissionOp',
@@ -7,21 +7,28 @@ __all__ = [
 ]
 
 
-class FetchSubmissionOp(Operation):
-    def __init__(self, submission_id):
-        self.submission_id = submission_id
+class FetchSubmissionOp(Task):
+    def __init__(self, problem_id, subm_id):
+        self.problem_id = problem_id
+        self.subm_id = subm_id
 
     def _run(self):
-        subm = self.context.api_client.get_submission(self.submission_id)
+        subm = self.context.api_client.get_submission(self.problem_id, self.subm_id)
         self.context.submission = subm
+        self.context.subm_lang = subm.lang
         self.context.judge_spec = judge_spec = subm.problem.judge_spec
+
+        # Some old contents uses kiB
+        if judge_spec.mem_limit_bytes <= 1_048_576:  # 1MiB
+            judge_spec.mem_limit_bytes *= 1024
+
         self.context.grader = judge_spec.grader
         if judge_spec.grader:
             self.context.grader_lang = judge_spec.grader.lang
         if self.context.sentry_client:
             self.context.sentry_client.user_context({
-                'submission_id': subm.id,
-                'problem_id': subm.problem.id
+                'submission_id': self.subm_id,
+                'problem_id': self.problem_id
             })
 
 
@@ -30,13 +37,13 @@ def check_not_null(value):
     return value
 
 
-class UpdateJudgeResultOp(Operation):
+class UpdateJudgeResultOp(Task):
     def __init__(self, *,
                  testset_id=None,
                  testcase_id=None,
                  status=None,
                  testcase_status=None,
-                 max_rss=None,
+                 mem=None,
                  time=None,
                  score=None,
                  error=None):
@@ -48,8 +55,8 @@ class UpdateJudgeResultOp(Operation):
         elif testcase_id is None:
             self.score = check_not_null(score)
         else:
-            self.testcase_status = testcase_status
-            self.max_rss = max_rss
+            self.testcase_status = check_not_null(testcase_status)
+            self.mem = mem
             self.time = time
             self.error = error
 
@@ -62,9 +69,9 @@ class UpdateJudgeResultOp(Operation):
             self._update_testcase_result()
 
     def _update_testcase_result(self):
-        if self.status == TestCaseJudgeStatus.PASSED:
+        if self.testcase_status == TestCaseJudgeStatus.PASSED:
             self.context.total_time += self.time
-            self.context.max_rss = max(self.max_rss, self.context.max_rss)
+            self.context.max_mem = max(self.mem, self.context.max_mem)
 
         self.context.api_client.set_testcase_judge_result(
             self.context.request.id,
@@ -72,7 +79,7 @@ class UpdateJudgeResultOp(Operation):
             self.testcase_id,
             TestCaseJudgeResult(
                 status=self.testcase_status,
-                memory_used_bytes=self.max_rss,
+                memory_used_bytes=self.mem,
                 time_elapsed_seconds=self.time,
                 error=self.error
             )
@@ -95,7 +102,7 @@ class UpdateJudgeResultOp(Operation):
             JudgeResult(
                 status=self.status,
                 total_score=self.context.total_score,
-                memory_used_bytes=self.context.max_rss,
+                memory_used_bytes=self.context.max_mem,
                 time_elapsed_seconds=self.context.total_time
             )
         )
