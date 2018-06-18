@@ -81,7 +81,7 @@ class UpdateJudgeResultOp(Task):
                 status=self.testcase_status,
                 memory_used_bytes=self.mem,
                 time_elapsed_seconds=self.time,
-                error=self.error
+                error_msg=self.error
             )
         )
 
