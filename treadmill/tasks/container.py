@@ -116,7 +116,7 @@ class SandboxEnviron(Environ):
                 *mapping_opts,
                 '--cg',
                 f'--meta={meta_file}',
-                f'--cg-mem={limits.mem_limit_bytes // 1024}',
+                f'--cg-mem={limits.mem_limit_bytes // 1024 * 2}',
                 f'--time={limits.time_limit_seconds}',
                 f'--wall-time={limits.time_limit_seconds * 3}',
                 f'--extra-time=1.0',
@@ -193,12 +193,14 @@ class ExecuteTask(Task):
 
         @property
         def timeout(self):
-            return self.meta.time_wall > self.context.judge_spec.time_limit_seconds
+            if self.meta.time_wall:
+                return self.meta.time_wall > self.context.judge_spec.time_limit_seconds
 
         @property
         def out_of_memory(self):
-            return (self.meta.exit_code == 1 and
-                    self.meta.cg_mem > self.context.judge_spec.mem_limit_bytes)
+            if self.meta.cg_mem:
+                return (self.meta.exit_code == 1 and
+                        self.meta.cg_mem >= self.context.judge_spec.mem_limit_bytes)
 
         @property
         def stdout(self):
