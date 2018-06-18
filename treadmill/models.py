@@ -44,7 +44,7 @@ class Grader(DataModel):
 
 
 class JudgeSpec(DataModel):
-    total_score: int
+    total_score: int = 100
     testsets: List[TestSet]
     grader: Optional[Grader]
     mem_limit_bytes: int
@@ -132,10 +132,11 @@ class IsolateExecMeta(object):
     @classmethod
     def parse(cls, data):
         props = {
-            k: ':'.join(v)
-            for line in data.split('\n')
-            if len(line) > 0
-            for k, *v in line.split(':')
+            pair[0] : ':'.join(pair[1:])
+            for pair in [
+                line.split(':')
+                for line in data.split('\n') if len(line) > 0
+            ]
         }
         return IsolateExecMeta(**props)
 
@@ -217,6 +218,6 @@ class IsolateExecMeta(object):
         When control groups are enabled, this is the total memory use by the
         whole control group (in bytes).
         """
-        cg_mem = self._props.get('cg_mem')
+        cg_mem = self._props.get('cg-mem')
         if cg_mem is not None:
-            return int(cg_mem) * 1000
+            return int(cg_mem) * 1024

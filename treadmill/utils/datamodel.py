@@ -131,8 +131,9 @@ class DataModel(object, metaclass=DataModelMeta):
         raise TypeError('Unsupported type ' + str(field_type))
 
     def _compose_dataclass(self, field_type, data):
-        assert isinstance(data, dict)
-        return field_type(**data)
+        if data is not None:
+            assert isinstance(data, dict)
+            return field_type(**data)
 
     @classmethod
     def schema(cls):
@@ -163,6 +164,7 @@ class DataModel(object, metaclass=DataModelMeta):
             field = _get_marshmallow_field(field_type)
             return field(
                 required=not optional,
+                allow_none=True,
                 missing=default,
                 default=default
             )
@@ -190,7 +192,7 @@ class DataModel(object, metaclass=DataModelMeta):
 
     @classmethod
     def _marsh_nested_field(cls, field_type):
-        return marshmallow.fields.Nested(field_type.schema())
+        return marshmallow.fields.Nested(field_type.schema(), allow_none=True, required=False)
 
     def __repr__(self):
         field_values = ', '.join([

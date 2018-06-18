@@ -32,16 +32,19 @@ def run_generator_function_or_callable(f):
     if inspect.isgeneratorfunction(f):
         task_gen = f()
         subtask_result = None
-        subtask_error = False
+        subtask_error = None
         while True:
             try:
-                subtask = task_gen.send(subtask_result)
+                if subtask_error:
+                    subtask = task_gen.throw(subtask_error)
+                    subtask_error = None
+                else:
+                    subtask = task_gen.send(subtask_result)
                 if runnable(subtask):
                     try:
                         subtask_result = subtask.run()
                     except Exception as e:
-                        subtask_error = True
-                        task_gen.throw(e)
+                        subtask_error = e
                 else:
                     subtask_result = None
             except StopIteration as end:

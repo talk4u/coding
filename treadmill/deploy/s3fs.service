@@ -6,7 +6,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=s3fs talk4u-data /home/ubuntu/treadmill-s3fs -o allow_other
+ExecStart=s3fs talk4u-data /home/ubuntu/treadmill-s3fs -o allow_other -o umask=0002
 ExecStop=umount /home/ubuntu/treadmill-s3fs
 User=ubuntu
 Group=ubuntu

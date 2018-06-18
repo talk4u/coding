@@ -193,8 +193,7 @@ class ExecuteTask(Task):
 
         @property
         def timeout(self):
-            return (self.meta.killed and
-                    self.meta.time_wall > self.context.judge_spec.time_limit_seconds)
+            return self.meta.time_wall > self.context.judge_spec.time_limit_seconds
 
         @property
         def out_of_memory(self):
