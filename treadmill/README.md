@@ -28,14 +28,25 @@ After the requirements has been met, you can run treadmill worker using dramatiq
 
 ## Development Guideline
 
-### Model definition using `DataClass`
+### Deploying new docker image
+
+1. Build and push new image using `docker/build.sh` with new version (you must specify!)
+2. Modify version number in `config.py`
+3. In treadmill server, pull new docker images using `docker/pull.sh`
+4. Restart treadmill worker 
+
+```
+sudo systemctl reload treadmill
+```
+
+### Model definition using `DataModel`
 
 We use [`marshmallow`](http://marshmallow.readthedocs.io/) to deserialize JSON string into
-`DataClass` python object. `DataClass` uses type annotation to automatically define
+`DataModel` python object. `DataModel` uses type annotation to automatically define
 marshmallow schema, so all you need to do is defining python class like `typing.NamedTuple`:
 
 ``` python
-class Person(DataClass):
+class Person(DataModel):
   first_name: str
   last_name: str
   age: int = 25
@@ -102,7 +113,7 @@ from treadmill.worker import WorkerFactory
 
 factory = WorkerFactory(config)
 judge_worker = factory.judge_worker()
-judge_worker.send(json.dumps({
+judge_worker.send({
   'id': 42,
   'submission_id': 40,
   'rejudge': False

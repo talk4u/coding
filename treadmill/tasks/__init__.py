@@ -1,1 +1,1 @@
-from .pipeline import JudgePipeline
+from .pipeline import JudgePipeline, EnqueuePipeline

@@ -1,8 +1,40 @@
 #!/bin/bash
 
-docker build -f builder-gcc/Dockerfile . -t talk4u/treadmill-builder-gcc:v0.1.0
-docker build -f builder-go110/Dockerfile . -t talk4u/treadmill-builder-go110:v0.1.0
-docker build -f builder-jdk8/Dockerfile . -t talk4u/treadmill-builder-jdk8:v0.1.0
-docker build -f sandbox-native/Dockerfile . -t talk4u/treadmill-sandbox-native:v0.1.0
-docker build -f sandbox-jre8/Dockerfile . -t talk4u/treadmill-sandbox-jre8:v0.1.0
-docker build -f sandbox-py36/Dockerfile . -t talk4u/treadmill-sandbox-py36:v0.1.0
+if [[ $# -ne 2 ]]; then
+  echo "Usage: ./build.sh DIRECTORY VERSION"
+  echo "       will build image with DIRECTORY/Dockerfile and tag with VERSION"
+  exit 0
+fi
+
+set -eu
+
+# Login to ECR
+eval $(aws ecr get-login --no-include-email --region ap-northeast-1)
+
+registry="648688992032.dkr.ecr.ap-northeast-1.amazonaws.com"
+
+function build_and_push() {
+  dirname=$1
+  version=$2
+  tag="talk4u/treadmill-${dirname%%/}"
+  dockerfile="${dirname%%/}/Dockerfile"
+
+  echo "Build $tag:$version"
+  
+  docker build -f $dockerfile . -t $tag:$version
+  docker tag $tag:$version $registry/$tag:$version
+
+  echo "Pushing $tag:$version"
+
+  docker push $registry/$tag:$version
+
+  echo "Pushed successfully"
+}
+
+if [[ $# -ne 2 ]]; then
+  echo "Usage: ./build.sh DIRECTORY VERSION"
+  echo "  -> will build image with DIRECTORY/Dockerfile and tag with VERSION"
+  exit 0
+fi
+
+build_and_push $1 $2

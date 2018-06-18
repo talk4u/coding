@@ -1,4 +1,4 @@
-import traceback
+import logging
 import threading
 
 import docker
@@ -7,13 +7,13 @@ import raven
 from treadmill.models import JudgeRequest, Submission, JudgeSpec, Grader, Lang
 from treadmill.clients import APIClient
 from treadmill.config import BaseConfig
+from treadmill.utils import ReprMixin
 
 
 global_context = threading.local()
 
 
 def get_current_context() -> 'JudgeContext':
-    global global_context
     return global_context.current
 
 
@@ -45,7 +45,7 @@ class JudgeContextFactory(object):
         )
 
 
-class JudgeContext(object):
+class JudgeContext(ReprMixin):
     request: JudgeRequest
     config: BaseConfig
     submission: Submission
@@ -56,7 +56,7 @@ class JudgeContext(object):
 
     total_score: int = 0
     total_time: float = 0.0
-    max_rss: int = 0
+    max_mem: int = 0
 
     docker_client: docker.DockerClient
     api_client: APIClient
@@ -73,19 +73,24 @@ class JudgeContext(object):
 
         self.total_score = 0
         self.total_time = 0
-        self.max_rss = 0
+        self.max_mem = 0
 
         self.docker_client = docker_client
         self.api_client = api_client
         self.sentry_client = sentry_client
+
+        self._logger = logging.getLogger('treadmill')
 
     def __enter__(self):
         set_current_context(self)
         if self.sentry_client:
             self.sentry_client.context.activate()
             self.sentry_client.user_context({
-                'request_id': self.request.id
+                'request_id': self.request.id,
+                'submission_id': self.request.submission_id,
+                'problem_id': self.request.problem_id
             })
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         set_current_context(None)
@@ -95,8 +100,9 @@ class JudgeContext(object):
     def __getattr__(self, item):
         return None
 
-    def log_current_error(self):
+    def log_current_error(self, task_stack=None):
+        self._logger.exception('Error while handling ' + str(self.request))
         if self.sentry_client:
-            self.sentry_client.captureException()
-        else:
-            traceback.print_exc()
+            self.sentry_client.captureException(extra={
+                'task_stack': [str(task) for task in task_stack]
+            })

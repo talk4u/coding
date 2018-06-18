@@ -31,7 +31,7 @@ class JudgeTask(Task):
                     testset_id=testset.id,
                     testcase_id=testcase.id,
                     testcase_status=TestCaseJudgeStatus.PASSED,
-                    max_rss=meta.max_rss,
+                    mem=meta.cg_mem,
                     time=meta.time
                 )
                 continue
@@ -47,25 +47,26 @@ class JudgeTask(Task):
                 yield ops.UpdateJudgeResultOp(
                     testset_id=testset.id,
                     testcase_id=testcase.id,
-                    status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
+                    testcase_status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
                 )
             except OutOfMemory:
                 yield ops.UpdateJudgeResultOp(
                     testset_id=testset.id,
                     testcase_id=testcase.id,
-                    status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
+                    testcase_status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
                 )
-            except SubmissionRuntimeError:
+            except SubmissionRuntimeError as e:
                 yield ops.UpdateJudgeResultOp(
                     testset_id=testset.id,
                     testcase_id=testcase.id,
-                    status=TestCaseJudgeStatus.RUNTIME_ERROR
+                    testcase_status=TestCaseJudgeStatus.RUNTIME_ERROR,
+                    error=e.message
                 )
             except WrongAnswer:
                 yield ops.UpdateJudgeResultOp(
                     testset_id=testset.id,
                     testcase_id=testcase.id,
-                    status=TestCaseJudgeStatus.WRONG_ANSWER
+                    testcase_status=TestCaseJudgeStatus.WRONG_ANSWER
                 )
             return 0
         return testset.score
@@ -86,7 +87,13 @@ class JudgeTask(Task):
             elif result.out_of_memory:
                 raise OutOfMemory()
             else:
-                raise SubmissionRuntimeError()
+                stderr = yield ops.ReadFileOp(result.stderr_file)
+                stdout = yield ops.ReadFileOp(result.stdout_file)
+                raise SubmissionRuntimeError(str({
+                    'isolate_output': result.output,
+                    'stderr': stderr,
+                    'stdout': stdout
+                }))
 
         if self.grader_sandbox:
             result: ExecuteTask.Result = ExecuteTask(

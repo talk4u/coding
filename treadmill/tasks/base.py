@@ -1,17 +1,27 @@
+import contextlib
 import inspect
+import logging
 import threading
 from abc import abstractmethod
 
-from treadmill.context import ContextMixin
+from dramatiq.middleware import TimeLimitExceeded
 
+from treadmill.context import ContextMixin
+from treadmill.utils import ReprMixin
+from .logger import IndentLogger
 
 __all__ = [
     'Task',
     'Environ',
     'push_environ',
     'pop_environ',
-    'get_active_environs'
+    'get_active_environs',
+    'get_task_stack'
 ]
+
+
+_logger: IndentLogger = logging.getLogger('treadmill.tasks')
+_logger.set_indent_provider(lambda: 2 * len(_global_task.stack) * ' ')
 
 
 def runnable(f):
@@ -20,59 +30,103 @@ def runnable(f):
 
 def run_generator_function_or_callable(f):
     if inspect.isgeneratorfunction(f):
-        gen = f()
+        task_gen = f()
         subtask_result = None
+        subtask_error = None
         while True:
             try:
-                subtask = gen.send(subtask_result)
-                subtask_result = subtask.run() if runnable(subtask) else None
+                if subtask_error:
+                    subtask = task_gen.throw(subtask_error)
+                    subtask_error = None
+                else:
+                    subtask = task_gen.send(subtask_result)
+                if runnable(subtask):
+                    try:
+                        subtask_result = subtask.run()
+                    except Exception as e:
+                        subtask_error = e
+                else:
+                    subtask_result = None
             except StopIteration as end:
                 return end.value
+            except (TimeLimitExceeded, KeyboardInterrupt) as e:
+                if not subtask_error:
+                    task_gen.throw(e)
+                raise
     elif callable(f):
         return f()
 
 
-class Task(ContextMixin):
+_global_task = threading.local()
+
+
+@contextlib.contextmanager
+def set_current_task(task):
+    global _global_task
+    if hasattr(_global_task, 'stack'):
+        stack = _global_task.stack
+    else:
+        _global_task.stack = stack = []
+    stack.append(task)
+    _logger.debug_with_indent(task)
+    try:
+        yield task
+    finally:
+        stack.pop()
+
+
+def get_task_stack():
+    return [str(task) for task in _global_task.stack]
+
+
+class Task(ContextMixin, ReprMixin):
     def run(self):
-        run_generator_function_or_callable(self._run)
+        with set_current_task(self):
+            return run_generator_function_or_callable(self._run)
 
     @abstractmethod
     def _run(self):
         pass
 
 
-global_environs = threading.local()
+_global_environs = threading.local()
 
 
 def push_environ(env):
-    global global_environs
-    stack = global_environs.stack or []
-    stack.append(env)
-    global_environs.stack = stack
+    if hasattr(_global_environs, 'stack'):
+        environ_stack = _global_environs.stack
+    else:
+        _global_environs.stack = environ_stack = []
+    environ_stack.append(env)
+    _global_task.stack.append(env)
+    _logger.debug_with_indent(env)
 
 
 def pop_environ():
-    global global_environs
-    stack = global_environs.stack
-    if stack:
-        ret = stack.pop()
-        global_environs.stack = stack or None
-        return ret
+    _global_environs.stack.pop()
+    _global_task.stack.pop()
 
 
 def get_active_environs():
-    global global_environs
-    return list(global_environs.stack)
+    global _global_environs
+    return list(_global_environs.stack)
 
 
-class Environ(ContextMixin):
+class Environ(ContextMixin, ReprMixin):
     def __enter__(self):
         push_environ(self)
-        run_generator_function_or_callable(self._setup)
+        try:
+            run_generator_function_or_callable(self._setup)
+            return self
+        except BaseException:
+            pop_environ()
+            run_generator_function_or_callable(self._teardown)
+            raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pop_environ()
         run_generator_function_or_callable(self._teardown)
+        return exc_type is None
 
     @abstractmethod
     def _setup(self):

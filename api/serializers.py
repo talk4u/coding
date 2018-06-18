@@ -161,7 +161,7 @@ class JudgeSpecSerializer(serializers.ModelSerializer):
         return {
             'src_file': obj.grader,
             'lang': 'c++'
-        }
+        } if obj.grader else None
 
     @staticmethod
     def get_testsets(obj):  # pragma: no cover

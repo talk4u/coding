@@ -10,6 +10,7 @@ import api.serializers as serializers
 from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
 from api.utils import is_student, is_instructor, update_dict_in_exist_keys, \
     get_latest_judge_result_queryset
+from api.judge import rejudge
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
@@ -68,8 +69,13 @@ class SubmissionViewSet(NestedViewSetMixin, ModelViewSet):
 
     @detail_route(methods=['post'], url_path='rejudge')
     def request_submission_rejudge(self, request, pk, parent_lookup_problem):
-        # TODO : call JudgeRequest to Treadmill
-        pass
+        # TODO: Create new JudgeRequest (not reuse old JudgeResult)
+        judge_result = models.JudgeResult.objects.get(submission_id=pk)
+        rejudge(
+            request_id=judge_result.id,
+            submission_id=pk,
+            problem_id=parent_lookup_problem
+        )
 
     def perform_create(self, serializer):
         code_size = serializer.validated_data['submission_data'].size

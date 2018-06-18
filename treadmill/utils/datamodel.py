@@ -25,7 +25,7 @@ _MARSHMALLOW_FIELDS = {
 
 def _is_primitive(type_):
     global _MARSHMALLOW_FIELDS
-    return issubclass(type_, tuple(_MARSHMALLOW_FIELDS.keys()))
+    return isinstance(type_, type) and issubclass(type_, tuple(_MARSHMALLOW_FIELDS.keys()))
 
 
 def _get_marshmallow_field(type_):
@@ -131,8 +131,9 @@ class DataModel(object, metaclass=DataModelMeta):
         raise TypeError('Unsupported type ' + str(field_type))
 
     def _compose_dataclass(self, field_type, data):
-        assert isinstance(data, dict)
-        return field_type(**data)
+        if data is not None:
+            assert isinstance(data, dict)
+            return field_type(**data)
 
     @classmethod
     def schema(cls):
@@ -142,8 +143,20 @@ class DataModel(object, metaclass=DataModelMeta):
                 default_val = cls._field_defaults.get(field_name)
                 schema_fields[field_name] = cls._marsh_field(field_type, default=default_val)
             cls.__schema__ = type(cls.__name__ + 'Schema', (marshmallow.Schema,), schema_fields)
-            cls.__post_load = marshmallow.post_load(lambda self, **kwargs: cls(**kwargs))
         return cls.__schema__()
+
+    def dump(self):
+        data, error = self.schema().dump(self)
+        if error:
+            raise TypeError(error)
+        return data
+
+    @classmethod
+    def load(cls, data):
+        data, error = cls.schema().load(data)
+        if error:
+            raise TypeError(error)
+        return cls(**data)
 
     @classmethod
     def _marsh_field(cls, field_type, optional=False, default=None):
@@ -151,6 +164,7 @@ class DataModel(object, metaclass=DataModelMeta):
             field = _get_marshmallow_field(field_type)
             return field(
                 required=not optional,
+                allow_none=True,
                 missing=default,
                 default=default
             )
@@ -178,7 +192,7 @@ class DataModel(object, metaclass=DataModelMeta):
 
     @classmethod
     def _marsh_nested_field(cls, field_type):
-        return marshmallow.fields.Nested(field_type.schema())
+        return marshmallow.fields.Nested(field_type.schema(), allow_none=True, required=False)
 
     def __repr__(self):
         field_values = ', '.join([
