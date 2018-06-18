@@ -10,7 +10,7 @@ import api.serializers as serializers
 from api.permissions import IsOwnerOrSolverOrInstructor, IsOwnerOrInstructor
 from api.utils import is_student, is_instructor, update_dict_in_exist_keys, \
     get_latest_judge_result_queryset
-from api.judge import judge, rejudge
+from api.judge import rejudge
 
 
 class UserViewSet(NestedViewSetMixin, ModelViewSet):
