@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import Optional, List
 
-from treadmill.utils import DataModel
+from treadmill.utils import DataModel, ObjectDict
 from treadmill.langs import LangProfile
 
 
@@ -111,7 +111,7 @@ class JudgeRequest(DataModel):
     created_at: Optional[datetime]
 
 
-class IsolateExecMeta(object):
+class IsolateExecMeta(ObjectDict):
     """
     From http://www.ucw.cz/moe/isolate.1.html
 
