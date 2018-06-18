@@ -9,8 +9,11 @@ __all__ = [
 
 
 class WorkspaceEnviron(Environ):
+    directory_ready = False
+
     def _setup(self):
         yield ops.MakeDirectoryOp(path.ROOT, mode=0o755)
+        self.directory_ready = True
 
         subm_src_file = path.subm_src_file()
         yield ops.CopyFileOp(
@@ -40,4 +43,5 @@ class WorkspaceEnviron(Environ):
             )
 
     def _teardown(self):
-        yield ops.RemoveDirectoryOp(path.ROOT)
+        if self.directory_ready:
+            yield ops.RemoveDirectoryOp(path.ROOT)

@@ -39,24 +39,13 @@ class WorkerFactory(object):
         request = JudgeRequest(**request_data)
         _logger.info('Received ' + str(request))
         with self.context_factory.new(request):
-            try:
-                JudgePipeline().run()
-            except RetryableError:
-                raise
-            except Exception as e:
-                _logger.exception(e)
-                self.retry_worker().send(request_data)
+            JudgePipeline().run()
 
     def _retry(self, request_data):
         request = JudgeRequest(**request_data)
         _logger.info('Received ' + str(request))
         with self.context_factory.new(request):
-            try:
-                EnqueuePipeline().run()
-                self.judge_worker().send(request_data)
-            except Exception as e:
-                _logger.exception(e)
-                raise
+            EnqueuePipeline().run()
 
     @cached
     def judge_worker(self):

@@ -1,3 +1,4 @@
+import logging
 import traceback
 import threading
 
@@ -79,12 +80,16 @@ class JudgeContext(ReprMixin):
         self.api_client = api_client
         self.sentry_client = sentry_client
 
+        self._logger = logging.getLogger('treadmill')
+
     def __enter__(self):
         set_current_context(self)
         if self.sentry_client:
             self.sentry_client.context.activate()
             self.sentry_client.user_context({
-                'request_id': self.request.id
+                'request_id': self.request.id,
+                'submission_id': self.request.submission_id,
+                'problem_id': self.request.problem_id
             })
         return self
 
@@ -97,12 +102,8 @@ class JudgeContext(ReprMixin):
         return None
 
     def log_current_error(self, task_stack=None):
+        self._logger.exception('Error while handling ' + str(self.request))
         if self.sentry_client:
             self.sentry_client.captureException(extra={
-                'task_stack': task_stack
+                'task_stack': [str(task) for task in task_stack]
             })
-        else:
-            traceback.print_exc()
-            if task_stack:
-                for task in task_stack:
-                    print(task)

@@ -1,5 +1,5 @@
 from treadmill.models import JudgeStatus
-from treadmill.signal import SubmissionCompileError, InternalApiError
+from treadmill.signal import SubmissionCompileError
 from .workspace import WorkspaceEnviron
 from .base import Task, get_task_stack
 from .stage import CompileStage, JudgeStage
@@ -22,15 +22,15 @@ class JudgePipeline(Task):
                 status=JudgeStatus.COMPILE_ERROR,
                 error=e.message
             )
-        except InternalApiError:
-            self.context.log_current_error()
-            raise
         except BaseException as e:
-            self.context.log_current_error(task_stack=get_task_stack())
-            yield ops.UpdateJudgeResultOp(
-                status=JudgeStatus.INTERNAL_ERROR,
-                error=str(e)
-            )
+            try:
+                self.context.log_current_error(task_stack=get_task_stack())
+                yield ops.UpdateJudgeResultOp(
+                    status=JudgeStatus.INTERNAL_ERROR,
+                    error=str(e)
+                )
+            finally:
+                yield ops.RetryLaterOp(tb=e.__traceback__)
 
 
 class EnqueuePipeline(Task):
@@ -40,12 +40,11 @@ class EnqueuePipeline(Task):
                 status=JudgeStatus.ENQUEUED,
                 error=''
             )
-        except InternalApiError:
-            self.context.log_current_error()
-            raise
+            yield ops.EnqueueOp()
         except BaseException as e:
             self.context.log_current_error(task_stack=get_task_stack())
             yield ops.UpdateJudgeResultOp(
                 status=JudgeStatus.INTERNAL_ERROR,
                 error=str(e)
             )
+            raise
