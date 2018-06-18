@@ -53,7 +53,7 @@ class JudgeTask(Task):
                 yield ops.UpdateJudgeResultOp(
                     testset_id=testset.id,
                     testcase_id=testcase.id,
-                    testcase_status=TestCaseJudgeStatus.TIME_LIMIT_EXCEEDED
+                    testcase_status=TestCaseJudgeStatus.MEMORY_LIMIT_EXCEEDED
                 )
             except SubmissionRuntimeError as e:
                 yield ops.UpdateJudgeResultOp(
