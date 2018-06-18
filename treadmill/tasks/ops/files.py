@@ -81,11 +81,6 @@ class CompareFileOp(Task):
         a = open(self.target.host_path, 'r').read().strip()
         b = open(self.expected.host_path, 'r').read().strip()
         return a == b
-        # return filecmp.cmp(
-        #     self.target.host_path,
-        #     self.expected.host_path,
-        #     shallow=False
-        # )
 
 
 class RemoveDirectoryOp(Task):
