@@ -207,7 +207,7 @@ class ExecuteResult(ObjectDict, ContextMixin):
     @property
     def out_of_memory(self):
         if self.meta.cg_mem:
-            return (self.meta.exit_code == 1 and
+            return (self.exit_code == 1 and
                     self.meta.cg_mem >= self.context.judge_spec.mem_limit_bytes)
 
     @property
