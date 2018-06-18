@@ -169,16 +169,18 @@ class DataModel(object, metaclass=DataModelMeta):
                 default=default
             )
         elif hasattr(field_type, '__origin__'):
-            return cls._marsh_container_field(field_type)
+            return cls._marsh_container_field(field_type, optional=optional)
         elif issubclass(field_type, DataModel):
-            return cls._marsh_nested_field(field_type)
+            return cls._marsh_nested_field(field_type, optional=optional)
         raise TypeError('Unsupported type ' + field_type)
 
     @classmethod
-    def _marsh_container_field(cls, field_type):
+    def _marsh_container_field(cls, field_type, optional=False):
         if _is_typing_list(field_type):
             list_arg_type = field_type.__args__[0]
-            return marshmallow.fields.List(cls._marsh_field(list_arg_type))
+            return marshmallow.fields.List(cls._marsh_field(list_arg_type),
+                                           required=not optional,
+                                           allow_none=True)
         elif _is_typing_optional(field_type):
             arg_type = field_type.__args__[0]
             return cls._marsh_field(arg_type, optional=True)
@@ -187,12 +189,16 @@ class DataModel(object, metaclass=DataModelMeta):
             value_type = field_type.__args__[1]
             assert key_type == str, 'Only string key is allowed'
             return marshmallow.fields.Dict(keys=cls._marsh_field(key_type),
-                                           values=cls._marsh_field(value_type))
+                                           values=cls._marsh_field(value_type),
+                                           required=not optional,
+                                           allow_none=True)
         raise TypeError('Unsupported type ' + field_type)
 
     @classmethod
-    def _marsh_nested_field(cls, field_type):
-        return marshmallow.fields.Nested(field_type.schema(), allow_none=True, required=False)
+    def _marsh_nested_field(cls, field_type, optional=False):
+        return marshmallow.fields.Nested(field_type.schema(),
+                                         required=not optional,
+                                         allow_none=True)
 
     def __repr__(self):
         field_values = ', '.join([
