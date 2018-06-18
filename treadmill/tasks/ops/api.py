@@ -101,7 +101,7 @@ class UpdateJudgeResultOp(Task):
             self.context.request.id,
             JudgeResult(
                 status=self.status,
-                total_score=self.context.total_score,
+                score=self.context.total_score,
                 memory_used_bytes=self.context.max_mem,
                 time_elapsed_seconds=self.context.total_time
             )

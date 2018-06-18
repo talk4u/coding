@@ -99,7 +99,7 @@ class TestSetJudgeResult(DataModel):
 class JudgeResult(DataModel):
     status: JudgeStatus
     error: Optional[str]
-    total_score: int
+    score: int
     time_elapsed_seconds: float
     memory_used_bytes: int
 
