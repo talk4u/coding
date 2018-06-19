@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 import os
 import cbs
+import datetime
 
 
 class BaseSettings:
@@ -116,8 +117,8 @@ class BaseSettings:
 
     JWT_AUTH = {
         'JWT_RESPONSE_PAYLOAD_HANDLER': 'coding.jwt.jwt_response_payload_handler',
+        'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1)
     }
-    JWT_REFRESH_EXPIRATION_DELTA = 14_400_000  # 10,000 days in
 
     LOGIN_URL = 'rest_framework:login'
     LOGOUT_URL = 'rest_framework:logout'
