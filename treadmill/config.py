@@ -77,7 +77,7 @@ class ProdConfig(BaseConfig):
     API_ENDPOINT = 'http://api.coding.talk4u.kr/api'
     API_SECRET_KEY = '!s!5w=_1)(0s*ain9(z125yj3sb2-cf6%g1!9njt^f+u)l9%8*'
     REDIS_HOST = 'talk4u-message-queue.b4awpy.0001.apne1.cache.amazonaws.com'
-    SENTRY_DSN = 'https://933cbe8327704f9ea2753e644091a355:62365dabd7f74b1e8c66588f27e7f6ec@sentry.io/1204221'
+    SENTRY_DSN = 'https://dbe2d697d5cf4efb81bb8c57fae0501e:b4116f3bc4ca4a8c88788d52ad0457fa@sentry.io/1228185'
 
     def __init__(self, **kwargs):
         self._set_prop('HOST_WORKSPACE_ROOT', kwargs)
