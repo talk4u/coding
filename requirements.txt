@@ -11,7 +11,7 @@ django-filter==1.1.0
 django-mysql==2.2.2
 django-rest-swagger==2.2.0
 django-storages==1.6.6
-djangorestframework==3.7.7
+djangorestframework==3.9.1
 djangorestframework-jwt==1.11.0
 dramatiq==1.2.0
 drf-extensions-django2-patch==0.3.2
