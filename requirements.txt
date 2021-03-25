@@ -29,7 +29,7 @@ pyflakes==1.6.0
 PyJWT==1.6.4
 python-coveralls==2.9.1
 pytz==2018.3
-PyYAML==3.12
+PyYAML==5.4
 raven==6.7.0
 redis==2.10.6
 requests==2.18.4
